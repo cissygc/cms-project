@@ -50,19 +50,48 @@ class MyCustomBackend {
 
   // Liste ekranı verileri
   async entriesByFolder(collection, extension, depth) {
-    console.log(`Liste getiriliyor: ${collection.get('name')}`);
+    const collectionName = typeof collection === 'string'
+    ? collection 
+    : (collection?.get ? collection.get('name') : collection?.name);
+
+    console.log(`Liste getiriliyor: ${collectionName}`);
     return []; 
   }
 
   // Tekil veri ekranı
   async getEntry(collection, slug, path) {
-    console.log(`Detay getiriliyor: ${slug}`);
+    console.log(`Detay istendi: ${slug}`);
+    return {
+      file: { path: path || 'posts/test.md' },
+      data: ""
+    }
+  }
+// Medya/Görsel sorgusu 
+  async getMedia(mediaPath) {
+    console.log(`Medya istendi: ${mediaPath}`);
+    return [];
+  }
+
+  //  Medya dosyası kaydetme
+  async persistMedia(bigFile, options = {}) {
+    console.log("Medya yükleniyor:", bigFile);
     return {};
   }
 
   // Kaydet butonu
   async persistEntry(entry, options) {
+
     console.log("Kaydedilecek veri:", entry);
+    const data = entry.dataFiles?.[0]?.raw || entry.data || {};
+    console.log("Formun içeriği:", data);
+
+    return {
+      file: {
+        path: entry.path || `posts/${entry.slug || 'yeni-yazi'}.md`,
+        slug: entry.slug || 'yeni-yazi',
+      }
+    };
+    
   }
 }
 
