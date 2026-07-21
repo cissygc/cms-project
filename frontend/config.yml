@@ -1,0 +1,15 @@
+backend:
+  name: my-custom-backend
+
+media_folder: "uploads"
+public_folder: "/uploads"
+
+collections:
+  - name: "posts"
+    label: "Yazılar"
+    folder: "posts"
+    create: true
+    fields:
+      - { label: "Başlık", name: "title", widget: "string" }
+      - { label: "İçerik", name: "body", widget: "text" }
+      - { label: "Yazar", name: "author", widget: "string", required: false }
