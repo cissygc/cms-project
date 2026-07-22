@@ -137,6 +137,7 @@ class MyCustomBackend {
   }
 
   // Kaydet butonu (POST İsteği)
+  // Kaydet butonu (POST İsteği)
   async persistEntry(entry, options) {
     const rawJsonString = entry.dataFiles[0].raw;
     const postData = JSON.parse(rawJsonString);
@@ -156,7 +157,18 @@ class MyCustomBackend {
         },
       );
 
-      if (!response.ok) throw new Error("Sunucu reddetti.");
+      // SUNUCU 400 VEYA 500 HATASI DÖNERSE:
+      if (!response.ok) {
+        // 1. Spring Boot'tan dönen ApiError JSON'unu oku
+        const errorData = await response.json();
+        
+        // 2. Bizim kurduğumuz JSON yapısındaki mesaja ulaş (exception.message)
+        // Eğer bulamazsa varsayılan bir hata yazsın
+        const backendMessage = errorData?.exception?.message || "Sunucu işlemi reddetti.";
+        
+        // 3. Decap CMS arayüzüne bu mesajı fırlat (Kırmızı kutuda bu yazar)
+        throw new Error(backendMessage);
+      }
 
       const savedPost = await response.json();
       console.log("MÜKEMMEL! Gerçek veri kaydedildi:", savedPost);
