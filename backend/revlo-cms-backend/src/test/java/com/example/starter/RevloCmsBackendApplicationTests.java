@@ -1,4 +1,4 @@
-package com.example.revlo_cms_backend;
+package com.example.starter;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
