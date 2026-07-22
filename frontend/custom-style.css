@@ -1,17 +1,42 @@
+/* Sayfa Tabanını Kilitleme (Alt Boşluk Engelleyici) */
+html, body, #nc-root {
+  height: 100% !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 /* ======================================================
-   DECAP CMS QUICK ADD VE AVATAR SAĞA TAŞIMA (%100 KESİN SELECTOR)
+   DECAP CMS HEADER (CONTENTS, MEDIA, QUICK ADD, AVATAR %100 SABİT)
    ====================================================== */
 
-/* 1. Üst Lacivert Header Kapsayıcısına Göreli Konum */
+/* Üst Header Kapsayıcısı */
 #nc-root header,
 header, 
 div[class*="AppHeader"] {
   position: relative !important;
   display: flex !important;
   align-items: center !important;
+  height: 56px !important;               /* Header Yüksekliğini Sabitler */
 }
 
-/* 2. QUICK ADD BUTONU (QuickSelect / QuickAdd / Quick isimlerinin tümünü yakalar) */
+/* 1. CONTENTS VE MEDIA LİNKLERİ (EN SOLDA %100 SABİT - HİÇ KIPIRDAMAZ) */
+div[class*="AppHeaderNav"],
+nav[class*="AppHeaderNav"],
+div[class*="Nav"],
+header nav,
+div[class*="AppHeaderContent"] > nav,
+div[class*="AppHeaderContent"] > div:first-child,
+div[class*="AppHeaderLinks"] {
+  position: absolute !important;
+  left: 32px !important;                 /* SOL KENARDAN 32px SABİTLENİR (EKRAN KÜÇÜLÜNCE KIPIRDAMAZ) */
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+  z-index: 1000 !important;
+}
+
+/* 2. QUICK ADD BUTONU (SAĞDA SABİT) */
 div[class*="QuickSelect"],
 button[class*="QuickSelect"],
 div[class*="QuickAdd"],
@@ -20,14 +45,14 @@ div[class*="quickSelect"],
 div[class*="Quick"],
 button[class*="Quick"] {
   position: absolute !important;
-  right: 80px !important;                /* LACİVERT BARIN İÇİNDE EN SAĞDA */
+  right: 80px !important;               /* SAĞ KENARDAN 80px SABİTLENİR */
   top: 50% !important;
   transform: translateY(-50%) !important;
   margin: 0 !important;
   z-index: 1000 !important;
 }
 
-/* 3. KULLANICI AVATARI / PROFİL İKONU (Avatar / UserWithAvatar isimlerinin tümünü yakalar) */
+/* 3. KULLANICI AVATARI / PROFİL İKONU (EN SAĞDA SABİT) */
 div[class*="Avatar"],
 img[class*="Avatar"],
 button[class*="Avatar"],
@@ -37,45 +62,25 @@ div[class*="UserProfile"],
 div[class*="UserMenu"],
 header > div > *:last-child {
   position: absolute !important;
-  right: 28px !important;                /* LACİVERT BARIN TAM SAĞ EN KENARI */
+  right: 28px !important;               /* SAĞ KENARDAN 28px SABİTLENİR */
   top: 50% !important;
   transform: translateY(-50%) !important;
   margin: 0 !important;
   z-index: 1000 !important;
 }
-/* ======================================================
-   DECAP CMS HEADER İÇ YAPISI İÇİN KESİN ÇÖZÜM
-   ====================================================== */
 
-/* 1. Header İç Kapsayıcısını (AppHeaderContent) Tam Genişlik Yapma */
+/* Header İç Kapsayıcısı Tam Genişlik */
 header > div,
 div[class*="AppHeaderContent"] {
   width: 100% !important;
   max-width: 100% !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: flex-start !important;
 }
 
-/* 2. Quick Add Butonunu ve Kullanıcı Profil İkonunu En Sağa İtme */
-div[class*="AppHeaderContent"] > *:nth-child(3),
-div[class*="AppHeaderContent"] > div[class*="QuickAdd"],
-div[class*="AppHeaderContent"] > button[class*="QuickAdd"],
-div[class*="QuickAdd"],
-button[class*="QuickAdd"] {
-  margin-left: auto !important;         /* SOLDAN TÜM BOŞLUĞU DOLDURUP EN SAĞA İTER */
-}
 
-/* 3. Kullanıcı Profil İkonunun Quick Add Yanında Durması */
-div[class*="AppHeaderContent"] > *:nth-child(4),
-div[class*="UserMenu"],
-div[class*="AppHeaderUser"] {
-  margin-left: 16px !important;
-}
-
- 
 /* ======================================================
-   3. ANA KAPSAYICI (HEADER ALTI 24px MESAFELİ)
+   ANA KAPSAYICI VE COLLECTIONS SIDEBAR
    ====================================================== */
 div[class*="AppMainContainer"],
 main {
@@ -83,54 +88,204 @@ main {
   width: 100% !important;
   max-width: 100% !important;
   margin: 0 !important;
-  padding: 1px 1px !important;        /* HEADER ALTI HİZALAMA MESAFESİ: 24px */
-
+  padding: 1px 1px !important;
+  background: transparent !important;
 }
-
 /* ======================================================
-   4. COLLECTIONS (HEADER İLE ARASINDAKİ MESAFE = 24px)
+   SOLA YAPIŞIK, EN ALTA SIFIR SIDEBAR (DÜZELTİLMİŞ)
    ====================================================== */
+
+/* 1. Tamamen Sola Yapışık ve En Alt Tabanına Sıfırlanmış Menü */
 div[class*="SidebarContainer"],
-aside[class*="SidebarContainer"] {
-  position: absolute !important;
-  top: 24px !important;                 /* HEADER İLE ARASINDAKİ MESAFE: 24px (YAZILAR İLE BİREBİR EŞİT) */
-  left: 32px !important;                /* Sayfanın sol kenarı */
-  width: 240px !important;
+aside[class*="SidebarContainer"],
+aside,
+div[class*="Sidebar"] {
+  position: fixed !important;
+  top: 56px !important;                  /* Header bittiği yer */
+  left: 0 !important;                    /* En sol kenar */
+  bottom: 0 !important;                  /* EN ALTA %100 SIFIRLAR (BOŞLUK KALMAZ) */
+  width: 240px !important;               /* Sabit 240px genişlik */
   min-width: 240px !important;
+  height: calc(100vh - 56px) !important; /* Ekranın en altına kadar kaplar */
+  min-height: calc(100vh - 56px) !important;
   margin: 0 !important;
   background: #ffffff !important;
-  border-radius: 12px !important;
-  border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
-  padding: 16px 20px !important;
-  z-index: 10 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-right: 1px solid #e2e8f0 !important;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03) !important;
+  padding: 20px 16px !important;
+  z-index: 100 !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
 }
 
-/* ======================================================
-   5. "YAZILAR" BARI (HEADER İLE ARASINDAKİ MESAFE = 24px - BİREBİR EŞİT)
-   ====================================================== */
-div[class*="CollectionHeader"],
-div[class*="CollectionTop"] {
-  width: calc(100% - 50px) !important;
-  min-width: 900px !important;
-  max-width: 1000px !important;
-  margin: 0 auto 10px auto !important;  /* HEADER İLE ARASINDAKİ MESAFE: 24px (COLLECTIONS İLE BİREBİR EŞİT) */
-  background: #ffffff !important;
-  border-radius: 10px !important;
+/* 2. "COLLECTIONS" Başlığı */
+aside h2, aside h3,
+div[class*="Sidebar"] h2,
+div[class*="Sidebar"] h3 {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  margin-bottom: 15px !important;
+  margin-top: 0px !important;
+  padding-left: 4px !important;
+}
+
+/* 3. Arama Kutusu (Büyüteç Simgesi Binişmesini Düzenleyen Padding) */
+aside input,
+div[class*="Sidebar"] input {
+  width: 100% !important;
+  background-color: #f8fafc !important;
   border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
-  padding: 20px 20px !important;
+  border-radius: 8px !important;
+  padding: 8px 12px 8px 36px !important;  /* SOLDAKİ İKON İÇİN 36px BOŞLUK */
+  font-size: 13px !important;
+  color: #1e293b !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
+}
+
+aside input:focus,
+div[class*="Sidebar"] input:focus {
+  outline: none !important;
+  background-color: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* SADECE ARAMA KUTUSU DIŞ DIŞ MARGİNİNİ SIFIRLAYIP YAZILAR İLE BİREBİR EŞİTLEME */
+div[class*="Sidebar"] div[class*="Search"],
+div[class*="SidebarContainer"] div[class*="Search"],
+div[class*="SearchContainer"] {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  width: 100% !important;
+}
+
+/* 4. Menü Elemanları */
+aside a,
+div[class*="Sidebar"] a,
+a[href*="#/collections/"] {
+  border-radius: 8px !important;
+  padding: 9px 12px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #475569 !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  text-decoration: none !important;
+}
+
+aside a:hover,
+div[class*="Sidebar"] a:hover,
+a[href*="#/collections/"]:hover {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  transform: translateX(4px) !important;
+}
+
+aside a[class*="active"],
+div[class*="Sidebar"] a[class*="active"],
+a[href*="#/collections/"][class*="active"] {
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+  font-weight: 700 !important;
+  border-left: 3px solid #2563eb !important;
+  padding-left: 10px !important;
+}
+
+/* 5. Ana İçerik Güvenlik Mesafesi */
+div[class*="CollectionHeader"],
+div[class*="CollectionTopContainer"],
+div[class*="CollectionTop"],
+div[class*="EntriesContainer"],
+div[class*="EntriesCollection"] {
+  margin-left: 270px !important;
+  width: calc(100% - 300px) !important;
+}
+
+/* SAĞ PANEL */
+div[class*="CollectionMain"],
+main[class*="CollectionMain"] {
+  flex: 1 !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* Dıştaki çakışan .card sınıfının sıfırlanması */
+.card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+
+/* ======================================================
+   "YAZILAR" KARTI VE İÇERİK ALANI
+   ====================================================== */
+
+/* İçteki gereksiz kutuları temizleme */
+div[class*="CollectionTopRow"],
+div[class*="CollectionHeader"],
+div[class*="HeaderContainer"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
-  position: relative !important;
-  z-index: 5 !important;
+}
+
+/* Ana Beyaz Kart (Sayfada ortalı, küçülünce esnek daralır) */
+div[class*="CollectionTopContainer"],
+div[class*="CollectionMain"] > div:first-child {
+  width: auto !important;
+  margin-left: max(290px, calc(50% - 500px)) !important;
+  margin-right: max(32px, calc(50% - 500px)) !important;
+  margin-top: 0 !important;
+  margin-bottom: 24px !important;
+  
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+  padding: 16px 24px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+/* "Yazılar" Başlık Metni */
+h1,
+div[class*="CollectionTopContainer"] h1,
+div[class*="CollectionTopRow"] h1 {
+  margin: 0 !important;
+  font-size: 1.75rem;
+  color: #0f172a;
+  background: transparent !important;
+  border: none !important;
 }
 
 /* "+ YAZILAR" BUTONU */
 a[href*="/collections/posts/new"],
 button[class*="QuickAdd"],
-a[class*="CollectionHeaderButton"] {
+app-add-item button {
   background-color: #2563eb !important;
   color: #ffffff !important;
   border-radius: 8px !important;
@@ -139,35 +294,40 @@ a[class*="CollectionHeaderButton"] {
   padding: 8px 18px !important;
   border: none !important;
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
 }
 
-/* ======================================================
-   6. SORT BY VE SİMGELER (YAZILARIN ÜSTÜNDE DEĞİL, SAYFANIN EN SAĞINDA)
-   ====================================================== */
+a[href*="/collections/posts/new"]:hover,
+button[class*="QuickAdd"]:hover,
+app-add-item button:hover {
+  background-color: #1d4ed8 !important;
+}
+
+/* SORT BY VE İKONLAR */
 div[class*="CollectionControls"],
 div[class*="SortControls"],
 div[class*="CollectionMainControls"] {
   position: absolute !important;
-  top: 0px !important;                  /* DİĞER ELEMANLARLA BİREBİR AYNI YÜKSEKLİK HİZASI */
-  right: 0px !important;                /* SAYFANIN EN SAĞ KENARI (YAZILARIN ÜSTÜNDE DEĞİL) */
+  top: 0px !important;
+  right: 0px !important;
   width: auto !important;
   display: flex !important;
   justify-content: flex-end !important;
-  align-items: right !important;
+  align-items: center !important;
   gap: 1px !important;
   margin: 0 !important;
   z-index: 10 !important;
 }
 
-/* ======================================================
-   7. NO ENTRIES / İÇERİK LİSTESİ ALANI
-   ====================================================== */
+/* NO ENTRIES / İÇERİK LİSTESİ ALANI */
 div[class*="EntriesContainer"],
 div[class*="NoEntries"],
 div[class*="EntriesCollection"] {
-  width: 100% !important;
-  max-width: 1000px !important;
-  margin: 40px auto 0 auto !important;
+  width: auto !important;
+  margin-left: max(290px, calc(50% - 500px)) !important;
+  margin-right: max(32px, calc(50% - 500px)) !important;
+  margin-top: 40px !important;
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
