@@ -12,6 +12,6 @@ collections:
     extension: json   # <--- BUNU EKLE
     format: json      # <--- BUNU EKLE
     fields:
-      - { label: "Başlık", name: "title", widget: "string" }
-      - { label: "İçerik", name: "body", widget: "text" }
-      - { label: "Yazar", name: "author", widget: "string", required: false }
+      - { label: "Başlık", name: "title", widget: "string", required: true } 
+      - { label: "İçerik", name: "body", widget: "markdown", required: true }
+      - { label: "Yazar", name: "author", widget: "string", required: true }
