@@ -4,6 +4,7 @@ import com.example.controller.IPostController;
 import com.example.dto.PostRequestDto;
 import com.example.dto.PostResponseDto;
 import com.example.service.IPostService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class PostControllerImpl implements IPostController {
 
     @Override
     @PostMapping(path="/create-post")
-    public PostResponseDto createPost(@RequestBody PostRequestDto postRequestDto) {
+    public PostResponseDto createPost(@Valid @RequestBody PostRequestDto postRequestDto) {
         return postService.createPost(postRequestDto);
     }
 
