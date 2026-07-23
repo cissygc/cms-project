@@ -29,10 +29,27 @@ public class PostControllerImpl implements IPostController {
     }
 
     @Override
-    @GetMapping(path = "/{id}")
+    @GetMapping(path = "/id/{id}")
     public PostResponseDto getPostById(@PathVariable(name = "id") Long id) {
         return postService.getPostById(id);
     }
 
+    // Decap CMS bu 3 endpoint'i slug uzerinden kullaniyor (bkz. custom-backend.js)
+    @Override
+    @GetMapping(path = "/slug/{slug}")
+    public PostResponseDto getPostBySlug(@PathVariable(name = "slug") String slug) {
+        return postService.getPostBySlug(slug);
+    }
 
+    @Override
+    @PutMapping(path = "/slug/{slug}")
+    public PostResponseDto updatePostBySlug(@PathVariable(name = "slug") String slug, @Valid @RequestBody PostRequestDto postRequestDto) {
+        return postService.updatePostBySlug(slug, postRequestDto);
+    }
+
+    @Override
+    @DeleteMapping(path = "/slug/{slug}")
+    public void deletePostBySlug(@PathVariable(name = "slug") String slug) {
+        postService.deletePostBySlug(slug);
+    }
 }
