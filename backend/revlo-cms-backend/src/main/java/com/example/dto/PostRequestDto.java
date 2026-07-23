@@ -7,6 +7,8 @@ import lombok.Data;
 @Data
 public class PostRequestDto {
 
+    private String slug;
+
     @NotBlank(message = "Title cannot be blank")
     @Size(min = 2, message = "Title must be at least 2 characters long")
     private String title;

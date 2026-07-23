@@ -1,10 +1,51 @@
+const API_BASE = "https://provoking-dork-purchase.ngrok-free.dev/rest/api/posts";
+
+function slugify(text) {
+  return (text || "")
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s")
+    .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ç/g, "c")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+async function apiFetch(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+      ...(options.headers || {}),
+    },
+  });
+  return response;
+}
+
+function toEntry(post) {
+  const entryData = {
+    title: post.title,
+    body: post.body,
+    author: post.author,
+  };
+  const jsonString = JSON.stringify(entryData);
+  return {
+    slug: post.slug,
+    file: { path: `posts/${post.slug}.json` },
+    path: `posts/${post.slug}.json`,
+    data: jsonString,
+    raw: jsonString,
+  };
+}
+
 class MyCustomBackend {
   constructor(config, options = {}) {
     this.config = config;
     this.options = options;
   }
 
-  // 1. Decap'in giriş ekranını çizen fonksiyon
+  // ---- Auth (test amaçlı, gerçek login yok) ----
   authComponent() {
     return function (props) {
       return window.h(
@@ -15,169 +56,148 @@ class MyCustomBackend {
             e.preventDefault();
             props.onLogin({ email: "admin@localhost" });
           },
-          style: {
-            padding: "10px",
-            margin: "20px",
-            cursor: "pointer",
-            fontSize: "16px",
-          },
+          style: { padding: "10px", margin: "20px", cursor: "pointer", fontSize: "16px" },
         },
         "Sisteme Giriş Yap (Test)",
       );
     };
   }
 
-  // 2. Giriş butonuna basıldığında Decap'in aradığı ve çalıştırdığı asıl metod
   async authenticate(state) {
-    console.log("Decap oturum açıyor...", state);
     return { email: state.email || "admin@localhost" };
   }
-
-  // 3. Sayfa yenilendiğinde oturumu açık tutmak için
   async restoreUser(user) {
     return user;
   }
-
-  // 4. Çıkış yapma fonksiyonu
   async logout() {
     return null;
   }
-
-  // 5. API istekleri için token
   async getToken() {
     return "test-token";
   }
-
-  // Mevcut kullanıcı
   async currentUser() {
     return { email: "admin@localhost" };
   }
 
-  // Liste ekranı verileri (GET İsteği)
+  // Decap bazı yerlerde bu metodları da çağırıyor; implemente edilmezse
+  // sessiz hatalar / tekrar tekrar deneme davranışına yol açabiliyor.
+  isGitBackend() {
+    return false;
+  }
+  async status() {
+    return { auth: { status: true }, api: { status: true } };
+  }
+  async unpublishedEntry() {
+    // Editorial workflow kullanmıyoruz -> her zaman "taslak yok" dönüyoruz.
+    return null;
+  }
+  async unpublishedEntries() {
+    return [];
+  }
+  async entriesByFiles(files) {
+    return [];
+  }
+  async traverseCursor() {
+    return { entries: [], cursor: null };
+  }
+
+  // 1. Tüm yazıları listele (GET)
   async entriesByFolder(collection, extension, depth) {
-    try {
-      const response = await fetch('https://provoking-dork-purchase.ngrok-free.dev/rest/api/posts/list', {
-        headers: {
-          'ngrok-skip-browser-warning': 'true' // Ngrok uyarı sayfasını engeller
-        }
-      });
-      
-      if (!response.ok) {
-        console.error("Backend listeyi vermedi. HTTP Status:", response.status);
-        return [];
-      }
-
-      const dtoList = await response.json();
-
-      if (!Array.isArray(dtoList)) {
-        console.error("Spring Boot'tan DTO dizisi gelmedi. Gelen veri:", dtoList);
-        return [];
-      }
-
-      const collectionName = typeof collection === 'string' ? collection : "posts";
-
-      const entries = dtoList.map(dto => ({
-        file: {
-          path: `${collectionName}/${dto.id}.json`,
-          id: dto.id.toString()
-        },
-        data: JSON.stringify(dto)
-      }));
-      
-      console.log("Decap UI'a listelenmek üzere giden veriler:", entries);
-      return entries;
-
-    } catch (error) {
-      console.error("Listeleme Hatası:", error);
-      return [];
+    const response = await apiFetch("/list", { method: "GET" });
+    if (!response.ok) {
+      throw new Error("Veriler listelenirken sunucu hatası oluştu.");
     }
+    const posts = await response.json();
+    return posts.map(toEntry);
   }
 
-  // Tekil veri ekranı (Detay)
-  async getEntry(collection, slug, path) {
-    if (!slug || slug === "undefined") return null;
-    try {
-      // URL düzeltildi (Fazlalık localhost silindi)
-      const response = await fetch(
-        `https://provoking-dork-purchase.ngrok-free.dev/rest/api/posts/${slug}`,
-        {
-          headers: {
-            'ngrok-skip-browser-warning': 'true'
-          }
-        }
-      );
-      if (!response.ok) return null;
+  // 2. Tekil kayıt (Decap'in listede tıklanan entry'yi açması)
+  // ÖNEMLİ: Decap CMS bu fonksiyonu (collection, slug) ile DEĞİL, TEK parametreyle,
+  // doğrudan dosya yolu (path) ile çağırıyor: this.implementation.getEntry(path)
+  // (bkz. decap-cms-core/src/backend.ts). Yanlış imza yüzden "slug" hep undefined
+  // geliyor ve kayıt hiç bulunamıyordu.
+  async getEntry(path) {
+    const match = /^posts\/(.+)\.json$/.exec(path || "");
+    const slug = match ? match[1] : null;
 
-      const dto = await response.json();
-      const collectionName = typeof collection === 'string' ? collection : (collection?.get ? collection.get("folder") : "posts");
-
-      return {
-        file: {
-          path: `${collectionName}/${dto.id}.json`,
-          id: dto.id.toString(),
-        },
-        data: JSON.stringify(dto),
-      };
-    } catch (error) {
-      console.error("Detay Getirme Hatası:", error);
-      return null;
+    if (!slug) {
+      throw new Error("Kayıt bulunamadı.");
     }
+
+    const response = await apiFetch(`/slug/${encodeURIComponent(slug)}`, { method: "GET" });
+    if (!response.ok) {
+      throw new Error("Kayıt bulunamadı.");
+    }
+    const postData = await response.json();
+    return toEntry(postData);
   }
 
-  // Medya/Görsel sorgusu
   async getMedia(mediaPath) {
-    console.log(`Medya istendi: ${mediaPath}`);
+    if (!mediaPath || mediaPath === "undefined") return [];
     return [];
   }
 
-  // Medya dosyası kaydetme
   async persistMedia(bigFile, options = {}) {
-    console.log("Medya yükleniyor:", bigFile);
     return {};
   }
 
-  // Kaydet butonu (POST İsteği)
-  // Kaydet butonu (POST İsteği)
+  async deleteFiles(paths, commitMessage) {
+    // path örn: "posts/benim-yazim.json" -> slug'ı çıkarıp backend'e DELETE atıyoruz
+    await Promise.all(
+      paths.map((p) => {
+        const match = /posts\/(.+)\.json$/.exec(p);
+        const slug = match ? match[1] : p;
+        return apiFetch(`/slug/${encodeURIComponent(slug)}`, { method: "DELETE" });
+      }),
+    );
+  }
+
+  // 3. Kaydet / Yayınla (Publish) butonu
+  // ÖNEMLİ: Decap "New Post" oluştururken entry.slug'ı DAHA BACKEND'E SORMADAN,
+  // başlıktan (title) türeterek client tarafında üretir ve editör bu slug ile açılır.
+  // Bizim eski kodumuz backend'in ürettiği auto-increment ID'yi "yeni slug" olarak
+  // geri döndürüyordu; Decap ise hâlâ eski (client) slug'a bağlı kalıp o slug'ı tekrar
+  // tekrar yüklemeye (getEntry) çalışıyor, backend'de bulamayınca hata alıyor ve bu
+  // tekrar deneme "infinite loop" gibi görünüyordu. Çözüm: slug hiçbir zaman değişmiyor;
+  // backend de kimliği (id yerine) bu slug üzerinden yönetiyor.
   async persistEntry(entry, options) {
     const rawJsonString = entry.dataFiles[0].raw;
     const postData = JSON.parse(rawJsonString);
 
-    console.log("Spring Boot'a Giden GERÇEK Veri:", postData);
-
-    try {
-      const response = await fetch(
-        "https://provoking-dork-purchase.ngrok-free.dev/rest/api/posts/create-post",
-        {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true" 
-          },
-          body: JSON.stringify(postData),
-        },
-      );
-
-      // SUNUCU 400 VEYA 500 HATASI DÖNERSE:
-      if (!response.ok) {
-        // 1. Spring Boot'tan dönen ApiError JSON'unu oku
-        const errorData = await response.json();
-        
-        // 2. Bizim kurduğumuz JSON yapısındaki mesaja ulaş (exception.message)
-        // Eğer bulamazsa varsayılan bir hata yazsın
-        const backendMessage = errorData?.exception?.message || "Sunucu işlemi reddetti.";
-        
-        // 3. Decap CMS arayüzüne bu mesajı fırlat (Kırmızı kutuda bu yazar)
-        throw new Error(backendMessage);
-      }
-
-      const savedPost = await response.json();
-      console.log("MÜKEMMEL! Gerçek veri kaydedildi:", savedPost);
-    } catch (error) {
-      console.error("Kaydetme Hatası:", error);
-      throw error;
+    // Decap'in ürettiği slug varsa onu kullan, yoksa (garanti olsun diye) başlıktan üret.
+    let slug = entry.slug || entry.dataFiles[0].slug;
+    if (!slug) {
+      slug = slugify(postData.title) || `post-${Date.now()}`;
     }
+
+    // Bu slug backend'de zaten var mı? Varsa güncelle (PUT), yoksa oluştur (POST).
+    const existingResponse = await apiFetch(`/slug/${encodeURIComponent(slug)}`, { method: "GET" });
+
+    let savedPost;
+    if (existingResponse.ok) {
+      const updateResponse = await apiFetch(`/slug/${encodeURIComponent(slug)}`, {
+        method: "PUT",
+        body: JSON.stringify(postData),
+      });
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json().catch(() => null);
+        throw new Error(errorData?.exception?.message || "Güncelleme reddedildi.");
+      }
+      savedPost = await updateResponse.json();
+    } else {
+      const createResponse = await apiFetch("/create-post", {
+        method: "POST",
+        body: JSON.stringify({ ...postData, slug }),
+      });
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json().catch(() => null);
+        throw new Error(errorData?.exception?.message || "Sunucu işlemi reddetti.");
+      }
+      savedPost = await createResponse.json();
+    }
+
+    return toEntry(savedPost);
   }
 }
 
-// Sınıfı sisteme tanıtıyoruz
 CMS.registerBackend("my-custom-backend", MyCustomBackend);

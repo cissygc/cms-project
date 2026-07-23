@@ -39,6 +39,17 @@ public class PostServiceImpl implements IPostService {
 
     @Override
     public PostResponseDto createPost(PostRequestDto postRequestDto) {
+        if (postRequestDto.getSlug() == null || postRequestDto.getSlug().isBlank()) {
+            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "slug is required"));
+        }
+        if (postRepository.existsBySlug(postRequestDto.getSlug())) {
+            // Decap CMS retry/save durumlarinda ayni slug tekrar gelebilir; kayitli olani dondurup
+            // "duplicate key" patlamasini ve olasi sonsuz dongu davranisini onluyoruz.
+            Post existing = postRepository.findBySlug(postRequestDto.getSlug()).get();
+            PostResponseDto responseDto = new PostResponseDto();
+            BeanUtils.copyProperties(existing, responseDto);
+            return responseDto;
+        }
         Post post=new Post();
         BeanUtils.copyProperties(postRequestDto,post);
         Post savedPost = postRepository.save(post);
@@ -60,5 +71,34 @@ public class PostServiceImpl implements IPostService {
         return responseDto;
     }
 
+    @Override
+    public PostResponseDto getPostBySlug(String slug) {
+        Post post = postRepository.findBySlug(slug)
+                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "slug: " + slug)));
+        PostResponseDto responseDto = new PostResponseDto();
+        BeanUtils.copyProperties(post, responseDto);
+        return responseDto;
+    }
+
+    @Override
+    public PostResponseDto updatePostBySlug(String slug, PostRequestDto postRequestDto) {
+        Post post = postRepository.findBySlug(slug)
+                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "slug: " + slug)));
+        post.setTitle(postRequestDto.getTitle());
+        post.setBody(postRequestDto.getBody());
+        post.setAuthor(postRequestDto.getAuthor());
+        // slug kasitli olarak degistirilmiyor: Decap'in URL'i / kimligi hep ayni kalmali.
+        Post savedPost = postRepository.save(post);
+        PostResponseDto responseDto = new PostResponseDto();
+        BeanUtils.copyProperties(savedPost, responseDto);
+        return responseDto;
+    }
+
+    @Override
+    public void deletePostBySlug(String slug) {
+        Post post = postRepository.findBySlug(slug)
+                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "slug: " + slug)));
+        postRepository.delete(post);
+    }
 
 }

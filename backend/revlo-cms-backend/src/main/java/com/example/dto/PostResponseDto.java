@@ -8,6 +8,7 @@ public class PostResponseDto{
 
     private Long id;
 
+    private String slug;
 
     private String title;
 
