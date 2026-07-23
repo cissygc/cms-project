@@ -3,6 +3,9 @@ package com.example.service.impl;
 import com.example.dto.PostRequestDto;
 import com.example.dto.PostResponseDto;
 import com.example.entity.Post;
+import com.example.exception.BaseException;
+import com.example.exception.ErrorMessage;
+import com.example.exception.MessageType;
 import com.example.mapper.PostMapper;
 import com.example.repository.PostRepository;
 import com.example.service.IPostService;
@@ -12,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PostServiceImpl implements IPostService {
@@ -42,4 +46,19 @@ public class PostServiceImpl implements IPostService {
         BeanUtils.copyProperties(savedPost,responseDto);
         return responseDto;
     }
+
+    @Override
+    public PostResponseDto getPostById(Long id) {
+        Post post = new Post();
+        PostResponseDto responseDto = new PostResponseDto();
+        Optional<Post> optionalPost = postRepository.findById(id);
+        if (optionalPost.isEmpty()){
+            throw new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "ID: " + id));
+        }
+        post = optionalPost.get();
+        BeanUtils.copyProperties(post,responseDto);
+        return responseDto;
+    }
+
+
 }

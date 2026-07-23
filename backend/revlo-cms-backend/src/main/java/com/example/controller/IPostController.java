@@ -8,4 +8,5 @@ import java.util.List;
 public interface IPostController {
     public List<PostResponseDto> getAllPosts();
     public PostResponseDto createPost(PostRequestDto postRequestDto);
+    public PostResponseDto getPostById(Long id);
 }

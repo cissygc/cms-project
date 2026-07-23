@@ -28,5 +28,11 @@ public class PostControllerImpl implements IPostController {
         return postService.createPost(postRequestDto);
     }
 
+    @Override
+    @GetMapping(path = "/{id}")
+    public PostResponseDto getPostById(@PathVariable(name = "id") Long id) {
+        return postService.getPostById(id);
+    }
+
 
 }
