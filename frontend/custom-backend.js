@@ -24,16 +24,20 @@ async function apiFetch(path, options = {}) {
 }
 
 function toEntry(post) {
+  if (!post) return null;
+  
   const entryData = {
-    title: post.title,
-    body: post.body,
-    author: post.author,
+    title: post.title || "",
+    body: post.body || "",
+    author: post.author || "",
   };
   const jsonString = JSON.stringify(entryData);
+  const cleanSlug = post.slug || `post-${Date.now()}`;
+
   return {
-    slug: post.slug,
-    file: { path: `posts/${post.slug}.json` },
-    path: `posts/${post.slug}.json`,
+    slug: cleanSlug,
+    file: { path: `posts/${cleanSlug}.json` },
+    path: `posts/${cleanSlug}.json`,
     data: jsonString,
     raw: jsonString,
   };
@@ -117,8 +121,8 @@ class MyCustomBackend {
   // (bkz. decap-cms-core/src/backend.ts). Yanlış imza yüzden "slug" hep undefined
   // geliyor ve kayıt hiç bulunamıyordu.
   async getEntry(path) {
-    const match = /^posts\/(.+)\.json$/.exec(path || "");
-    const slug = match ? match[1] : null;
+    const match = /(?:^|\/)posts\/(.+?)(?:\.json)?$/.exec(path || "");
+    const slug = match ? match[1] : path;
 
     if (!slug) {
       throw new Error("Kayıt bulunamadı.");
@@ -132,22 +136,43 @@ class MyCustomBackend {
     return toEntry(postData);
   }
 
-  async getMedia(mediaPath) {
-    if (!mediaPath || mediaPath === "undefined") return [];
+  async getMedia(folderPath) {
     return [];
   }
 
-  async persistMedia(bigFile, options = {}) {
-    return {};
+  async getMediaDisplayURL(key) {
+    if (typeof key === "object" && key !== null) {
+      return key.url || key.path || "";
+    }
+    return key || "";
+  }
+
+  async persistMedia(fileObj, options = {}) {
+    const fileName = fileObj.file ? fileObj.file.name : "uploaded-file";
+    const dummyUrl = `https://via.placeholder.com/150?text=${encodeURIComponent(fileName)}`;
+
+    return {
+      id: `media-${Date.now()}`,
+      name: fileName,
+      path: `uploads/${fileName}`,
+      url: dummyUrl,
+      size: fileObj.file ? fileObj.file.size : 0,
+      file: fileObj.file,
+    };
+  }
+
+  async deleteMedia(path) {
+    return true;
   }
 
   async deleteFiles(paths, commitMessage) {
-    // path örn: "posts/benim-yazim.json" -> slug'ı çıkarıp backend'e DELETE atıyoruz
+    const postPaths = (paths || []).filter((p) => typeof p === "string" && p.includes("posts/"));
+
     await Promise.all(
-      paths.map((p) => {
-        const match = /posts\/(.+)\.json$/.exec(p);
+      postPaths.map((p) => {
+        const match = /(?:^|\/)posts\/(.+?)(?:\.json)?$/.exec(p);
         const slug = match ? match[1] : p;
-        return apiFetch(`/slug/${encodeURIComponent(slug)}`, { method: "DELETE" });
+        return apiFetch(`/slug/${encodeURIComponent(slug)}`, { method: "DELETE" }).catch(() => null);
       }),
     );
   }
