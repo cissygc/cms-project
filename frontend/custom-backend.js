@@ -28,6 +28,8 @@ function toEntry(post) {
     title: post.title,
     body: post.body,
     author: post.author,
+    image: post.image || "",
+    date: post.date || post.createdAt || new Date().toISOString(),
   };
   const jsonString = JSON.stringify(entryData);
   return {
@@ -43,6 +45,7 @@ class MyCustomBackend {
   constructor(config, options = {}) {
     this.config = config;
     this.options = options;
+    this.mediaList = [];
   }
 
   // ---- Auth (test amaçlı, gerçek login yok) ----
@@ -133,12 +136,40 @@ class MyCustomBackend {
   }
 
   async getMedia(mediaPath) {
-    if (!mediaPath || mediaPath === "undefined") return [];
-    return [];
+    return this.mediaList || [];
   }
 
+  // Medya görsel URL önizlemesi
+  async getMediaDisplayURL(displayURL) {
+    if (typeof displayURL === "string") return displayURL;
+    if (displayURL && displayURL.url) return displayURL.url;
+    if (displayURL && displayURL.file) return URL.createObjectURL(displayURL.file);
+    return displayURL;
+  }
+
+  // Medya dosyası kaydetme (Resim Yükleme ve Önizleme Desteği)
   async persistMedia(bigFile, options = {}) {
-    return {};
+    console.log("Medya yükleniyor:", bigFile);
+    const file = bigFile.file || bigFile;
+    const url = file instanceof Blob ? URL.createObjectURL(file) : (file.url || "");
+    const mediaItem = {
+      id: file.name || `media-${Date.now()}`,
+      name: file.name || "photo.jpg",
+      size: file.size || 0,
+      path: `uploads/${file.name || "photo.jpg"}`,
+      url: url,
+      displayURL: url,
+      file: file
+    };
+    if (!this.mediaList) this.mediaList = [];
+    // Aynı isimde dosya zaten varsa tekrarlama
+    const existingIndex = this.mediaList.findIndex(m => m.name === mediaItem.name);
+    if (existingIndex >= 0) {
+      this.mediaList[existingIndex] = mediaItem;
+    } else {
+      this.mediaList.push(mediaItem);
+    }
+    return mediaItem;
   }
 
   async deleteFiles(paths, commitMessage) {
