@@ -9,9 +9,10 @@ collections:
     label: "Yazılar"
     folder: "posts"
     create: true
-    extension: json   # <--- BUNU EKLE
-    format: json      # <--- BUNU EKLE
+    extension: json
+    format: json
     fields:
       - { label: "Başlık", name: "title", widget: "string" }
+      - { label: "Kapak Fotoğrafı", name: "image", widget: "image", required: false }
       - { label: "İçerik", name: "body", widget: "text" }
       - { label: "Yazar", name: "author", widget: "string", required: false }

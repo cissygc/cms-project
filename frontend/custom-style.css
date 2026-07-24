@@ -104,7 +104,7 @@ div[class*="Sidebar"] {
   top: 56px !important;                  /* Header bittiği yer */
   left: 0 !important;                    /* En sol kenar */
   bottom: 0 !important;                  /* EN ALTA %100 SIFIRLAR (BOŞLUK KALMAZ) */
-  width: 240px !important;               /* Sabit 240px genişlik */
+  width: 300px !important;               /* Sabit 240px genişlik */
   min-width: 240px !important;
   height: calc(100vh - 56px) !important; /* Ekranın en altına kadar kaplar */
   min-height: calc(100vh - 56px) !important;
@@ -116,10 +116,26 @@ div[class*="Sidebar"] {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03) !important;
   padding: 20px 16px !important;
   z-index: 100 !important;
-  overflow-y: auto !important;
+  overflow-y: hidden !important;
   box-sizing: border-box !important;
 }
 
+/* SOL MENÜ İÇİNDEKİ TÜM ELEMANLARIN SCROLLBAR'LARINI %100 YOK ETME */
+aside *,
+div[class*="Sidebar"] *,
+aside[class*="SidebarContainer"] * {
+  overflow-x: hidden !important;
+  scrollbar-width: none !important;      /* Firefox */
+  -ms-overflow-style: none !important;  /* IE / Edge */
+}
+
+aside *::-webkit-scrollbar,
+div[class*="Sidebar"] *::-webkit-scrollbar,
+aside[class*="SidebarContainer"] *::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+}
 /* 2. "COLLECTIONS" Başlığı */
 aside h2, aside h3,
 div[class*="Sidebar"] h2,
@@ -334,4 +350,45 @@ div[class*="EntriesCollection"] {
   color: #64748b !important;
   font-size: 15px !important;
   font-weight: 500 !important;
+}
+/* ======================================================
+   YAN YANA 2'Lİ İÇERİK KARTLARI DÜZENİ (2 SÜTUN)
+   ====================================================== */
+
+/* 2'li Izgara Kapsayıcısı (Yan yana 2 kart) */
+div[class*="EntriesContainer"],
+div[class*="EntriesCollection"],
+div[class*="CardsGrid"],
+div[class*="Grid"],
+ul[class*="CardsGrid"],
+div[class*="EntriesList"] {
+  width: calc(100% - 340px) !important;
+  max-width: 1000px !important;
+  margin-left: 290px !important;
+  margin-right: auto !important;
+  margin-top: 20px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;  /* YAN YANA TAM 2 ADET KART */
+  gap: 16px !important;
+  box-sizing: border-box !important;
+}
+
+/* Yan Yana Duracak Kartlar */
+ul[class*="CardsGrid"] > li,
+div[class*="CardsGrid"] > *,
+div[class*="Card"],
+a[class*="Card"],
+div[class*="ListCard"],
+a[class*="ListCard"] {
+  width: 100% !important;
+  height: auto !important;
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+  padding: 18px 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
 }

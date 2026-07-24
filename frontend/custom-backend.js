@@ -130,10 +130,30 @@ class MyCustomBackend {
     return [];
   }
 
-  // Medya dosyası kaydetme
+  // Medya görsel URL önizlemesi
+  async getMediaDisplayURL(displayURL) {
+    if (typeof displayURL === "string") {
+      return displayURL;
+    }
+    if (displayURL && displayURL.file) {
+      return URL.createObjectURL(displayURL.file);
+    }
+    return displayURL;
+  }
+
+  // Medya dosyası kaydetme (Resim Yükleme ve Önizleme Desteği)
   async persistMedia(bigFile, options = {}) {
     console.log("Medya yükleniyor:", bigFile);
-    return {};
+    const file = bigFile.file || bigFile;
+    const url = file instanceof Blob ? URL.createObjectURL(file) : "";
+    return {
+      id: bigFile.id || bigFile.path || file.name || "media-id",
+      name: file.name || "photo.jpg",
+      size: file.size || 0,
+      path: bigFile.path || `uploads/${file.name || "photo.jpg"}`,
+      url: url,
+      displayURL: url,
+    };
   }
 
   // Kaydet butonu (POST İsteği)
