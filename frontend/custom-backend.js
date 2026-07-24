@@ -47,6 +47,7 @@ class MyCustomBackend {
   constructor(config, options = {}) {
     this.config = config;
     this.options = options;
+    this.mediaList = [];
   }
 
   // ---- Auth (test amaçlı, gerçek login yok) ----
