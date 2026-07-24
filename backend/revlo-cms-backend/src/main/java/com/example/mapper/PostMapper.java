@@ -14,6 +14,7 @@ public class PostMapper {
 
         PostResponseDto dto = new PostResponseDto();
         dto.setId(post.getId());
+        dto.setSlug(post.getSlug());
         dto.setTitle(post.getTitle());
         dto.setBody(post.getBody());
         dto.setAuthor(post.getAuthor());
@@ -27,6 +28,7 @@ public class PostMapper {
         if (dto == null) return null;
 
         Post post = new Post();
+        post.setSlug(dto.getSlug());
         post.setTitle(dto.getTitle());
         post.setBody(dto.getBody());
         post.setAuthor(dto.getAuthor());

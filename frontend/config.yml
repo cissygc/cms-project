@@ -12,7 +12,7 @@ collections:
     extension: json
     format: json
     fields:
-      - { label: "Başlık", name: "title", widget: "string" }
+      - { label: "Başlık", name: "title", widget: "string", required: true }
       - { label: "Kapak Fotoğrafı", name: "image", widget: "image", required: false }
-      - { label: "İçerik", name: "body", widget: "text" }
-      - { label: "Yazar", name: "author", widget: "string", required: false }
+      - { label: "İçerik", name: "body", widget: "markdown", required: true }
+      - { label: "Yazar", name: "author", widget: "string", required: true }
