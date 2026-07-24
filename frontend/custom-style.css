@@ -665,3 +665,25 @@ button[class*="SortDirection"]:hover {
   background: #eff6ff !important;
   border-color: #2563eb !important;
 }
+/* ======================================================
+   MEDYA KÜTÜPHANESİ (IMAGES POPUP) TEMİZ KATMAN FIX
+   ====================================================== */
+
+div[class*="MediaLibrary"],
+div[class*="Modal"],
+div[role="dialog"],
+div[class*="Overlay"],
+div[class*="Portal"] {
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+}
+
+div[class*="MediaLibrary"] button,
+div[class*="Modal"] button,
+button[class*="Upload"],
+input[type="file"] {
+  position: relative !important;
+  z-index: 1000000 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
