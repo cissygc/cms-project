@@ -392,3 +392,276 @@ a[class*="ListCard"] {
   justify-content: space-between !important;
   box-sizing: border-box !important;
 }
+
+/* ======================================================
+   DECAP CMS EDITÖR YAZI YAZMA VE GİRDİ İŞLEME DÜZELTMESİ
+   ====================================================== */
+div[class*="ControlPane"],
+div[class*="EditorContainer"],
+div[class*="slate-editor"],
+.nc-widgetControl-input {
+  pointer-events: auto !important;
+  z-index: 10 !important;
+  opacity: 1 !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+div[class*="EditorControlBar"] {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+}
+/* ======================================================
+   DECAP CMS REACT-SPLIT-PANE TAM EKRAN DÜZELTMESİ
+   ====================================================== */
+
+/* 1. Sağdaki boş kutuyu (.Pane2), ayırıcı çizgiyi (.Resizer) ve göz simgesini tamamen sil */
+.Pane2,
+.Resizer,
+div[class*="Pane2"],
+div[class*="Resizer"],
+div[class*="PreviewPaneContainer"],
+div[class*="PreviewPane"],
+div[class*="EditorPreviewPane"],
+button[class*="TogglePreview"] {
+  display: none !important;
+  width: 0 !important;
+}
+
+/* 2. Yazı alanını (.Pane1) tek parça yap, ortala ve iç kaydırma barını kaldır */
+.Pane1,
+div[class*="Pane1"],
+div[class*="ControlPaneContainer"],
+div[class*="ControlPane"],
+div[class*="EditorControlPane"] {
+  width: 100% !important;
+  max-width: 1000px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;          /* İç kaydırma barını kaldırır, sayfa geneline verir */
+  display: block !important;
+}
+
+/* 3. Tüm bölmeli kapsayıcının ve sayfa arkaplanının boyut/boşluk düzeltmesi */
+.SplitPane,
+div[class*="SplitPane"],
+div[class*="EditorContainer"],
+div[class*="EditorLayout"] {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 32px 24px !important;
+  background-color: #ffffff !important;
+  min-height: calc(100vh - 56px) !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+/* 4. En alttaki gri boşluğu temizle */
+html, body, #nc-root, main, div[class*="AppMainContainer"] {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* ======================================================
+   TOGGLE PREVIEW, SYNC SCROLLING VE EN ALT BOŞLUK DÜZELTMESİ
+   ====================================================== */
+
+/* 1. Toggle Preview ve Sync Scrolling butonlarını tamamen gizle */
+button[class*="TogglePreview"],
+button[title*="Toggle Preview"],
+button[title*="preview"],
+button[class*="SyncScroll"],
+button[title*="Sync"],
+div[class*="SyncScroll"],
+label[class*="SyncScroll"],
+span[class*="SyncScroll"],
+div[class*="EditorControlBar"] button[title*="Sync"],
+div[class*="EditorControlBar"] label[class*="Switch"] {
+  display: none !important;
+}
+
+/* 2. En alttaki kalan boşluğu tamamen sıfırla */
+html, body, #nc-root, main, 
+div[class*="AppMainContainer"], 
+div[class*="EditorContainer"],
+div[class*="EditorLayout"] {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+/* ======================================================
+   SAYFA KENARLARINDAKİ BOŞLUKLARI KALDIRMA (TAM GENİŞLİK FORM)
+   ====================================================== */
+
+/* Form alanını ve tüm kapsayıcıları %100 tam genişlik yap, yan boşlukları sıfırla */
+div[class*="ControlPane"],
+div[class*="EditorControlPane"],
+.Pane1,
+div[class*="Pane1"],
+div[class*="ControlPaneContainer"],
+div[class*="EditorContainer"],
+div[class*="EditorLayout"],
+.SplitPane,
+div[class*="SplitPane"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  box-sizing: border-box !important;
+}
+
+/* ======================================================
+   EDITÖR ODAKLANMA (SİYAH ÇERÇEVE) VE DIŞ YAN BOŞLUK FIX
+   ====================================================== */
+
+/* 1. Yazı yazarken metin kutusunun etrafında oluşan siyah kenarlığı/odaklanmayı kaldır */
+div[class*="slate-editor"]:focus-within,
+div[class*="slate-editor"]:focus,
+div[class*="slate-editor"] *,
+div[class*="ControlPane"] [contenteditable="true"]:focus,
+div[class*="ControlPane"] [contenteditable="true"]:focus-within,
+[contenteditable="true"] {
+  outline: none !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+/* 2. Sayfa kenarlarındaki gri alan çerçevesini ve dış boşluğu tamamen sıfırla */
+div[class*="EditorContainer"],
+div[class*="EditorLayout"],
+div[class*="ControlPane"],
+div[class*="EditorControlPane"],
+div[class*="AppMainContainer"],
+main {
+  background-color: #ffffff !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  padding-top: 16px !important;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* ======================================================
+   İÇ GİRDİ KUTULARININ (680px) SINIRINI KALDIRMA VE TAM GENİŞLİK YAPMA
+   ====================================================== */
+
+div[class*="ControlContainer"],
+div[class*="WidgetFolder"],
+div[class*="ControlPane"] > div,
+div[class*="ControlPane"] > div > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+/* ======================================================
+   EDITORCONTAINER TAM EKRAN VE EN ALT MİNİK BOŞLUK FIX
+   ====================================================== */
+
+/* 1. Mavi alanın etrafındaki tüm yeşil padding boşluklarını sıfırla */
+div[class*="EditorContainer"],
+div[class*="AppMainContainer"],
+div[class*="AppContainer"],
+#nc-root,
+main {
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 2. En alttaki minik kalan boşluğu tamamen sil */
+html, 
+body, 
+#nc-root {
+  height: 100% !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-y: auto !important;
+}
+
+/* 3. Yazı formunun iç mesafesi ve tam genişliği */
+div[class*="ControlPane"],
+div[class*="EditorControlPane"] {
+  padding: 24px !important;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* ======================================================
+   EN ALT GRİ ÇİZGİ/ŞERİT SIFIRLAMA VE SOL KENAR YAPISTIRMA FIX
+   ====================================================== */
+
+/* 1. Tüm sayfa arkaplanını (Body, Nc-Root, Main) saf beyaz yap (Gri şeritleri yok eder) */
+html, 
+body, 
+#nc-root, 
+main, 
+div[class*="AppMainContainer"], 
+div[class*="AppContainer"],
+div[class*="EditorContainer"],
+div[class*="EditorLayout"] {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100vh !important;
+  box-sizing: border-box !important;
+}
+
+/* 2. Girdi kutularını (Yazar, İçerik vb.) en sol kenara sıfıra sıfır yapıştır */
+div[class*="ControlPane"],
+div[class*="EditorControlPane"],
+div[class*="ControlContainer"],
+div[class*="WidgetFolder"],
+div[class*="ControlPane"] > div {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  background-color: #ffffff !important;
+}
+
+/* ======================================================
+   SIRALAMA YÖNÜ (ESKİDEN YENİYE / YENİDEN ESKİYE) BUTON STİLİ
+   ====================================================== */
+
+div[class*="SortControls"] button,
+button[class*="SortDirection"] {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #2563eb !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+div[class*="SortControls"] button:hover,
+button[class*="SortDirection"]:hover {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+}

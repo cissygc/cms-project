@@ -11,8 +11,10 @@ collections:
     create: true
     extension: json
     format: json
+    sortable_fields: ["date", "title", "author"]
     fields:
       - { label: "Başlık", name: "title", widget: "string", required: true }
+      - { label: "Tarih", name: "date", widget: "datetime", default: "", required: false }
       - { label: "Kapak Fotoğrafı", name: "image", widget: "image", required: false }
       - { label: "İçerik", name: "body", widget: "markdown", required: true }
       - { label: "Yazar", name: "author", widget: "string", required: true }

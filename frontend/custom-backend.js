@@ -28,6 +28,7 @@ function toEntry(post) {
     title: post.title,
     body: post.body,
     author: post.author,
+    date: post.date || post.createdAt || new Date().toISOString(),
   };
   const jsonString = JSON.stringify(entryData);
   return {

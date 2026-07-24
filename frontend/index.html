@@ -4,12 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CMS Yönetim Paneli</title>
-  
-  <!-- Kendi CSS dosyamızı Decap'ten ÖNCE veya SONRA ekleyerek stilleri eziyoruz -->
-  <link rel="stylesheet" href="custom-style.css" />
 </head>
 <body>
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   <script src="custom-backend.js"></script>
+
+  <!-- Kendi CSS dosyamızı Decap CMS'ten SONRA yükleyerek tüm stilleri kesin olarak eziyoruz -->
+  <link rel="stylesheet" href="custom-style.css" />
 </body>
 </html>
