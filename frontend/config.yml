@@ -11,6 +11,7 @@ collections:
     create: true
     extension: json
     format: json
+    summary: "{{title}}"
     sortable_fields: ["date", "title", "author"]
     fields:
       - { label: "Başlık", name: "title", widget: "string", required: true }
