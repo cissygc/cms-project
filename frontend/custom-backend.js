@@ -148,17 +148,30 @@ class MyCustomBackend {
   }
 
   async persistMedia(fileObj, options = {}) {
-    const fileName = fileObj.file ? fileObj.file.name : "uploaded-file";
-    const dummyUrl = `https://via.placeholder.com/150?text=${encodeURIComponent(fileName)}`;
-
-    return {
-      id: `media-${Date.now()}`,
-      name: fileName,
-      path: `uploads/${fileName}`,
-      url: dummyUrl,
-      size: fileObj.file ? fileObj.file.size : 0,
-      file: fileObj.file,
+    console.log("Medya yükleniyor:", bigFile);
+    const file = bigFile.file || bigFile;
+    const url = file instanceof Blob ? URL.createObjectURL(file) : (file.url || "");
+    
+    const mediaItem = {
+      id: file.name || `media-${Date.now()}`,
+      name: file.name || "photo.jpg",
+      size: file.size || 0,
+      path: `uploads/${file.name || "photo.jpg"}`,
+      url: url,
+      displayURL: url,
+      file: file
     };
+
+    if (!this.mediaList) this.mediaList = [];
+    
+    const existingIndex = this.mediaList.findIndex(m => m.name === mediaItem.name);
+    if (existingIndex >= 0) {
+      this.mediaList[existingIndex] = mediaItem;
+    } else {
+      this.mediaList.push(mediaItem);
+    }
+
+    return mediaItem;
   }
 
   async deleteMedia(path) {
