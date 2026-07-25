@@ -6,10 +6,9 @@ import com.example.dto.PostResponseDto;
 import java.util.List;
 
 public interface IPostService {
-    public List<PostResponseDto> getAllPosts();
-    public PostResponseDto createPost(PostRequestDto postRequestDto);
-    public PostResponseDto getPostById(Long id);
-    public PostResponseDto getPostBySlug(String slug);
-    public PostResponseDto updatePostBySlug(String slug, PostRequestDto postRequestDto);
-    public void deletePostBySlug(String slug);
+    PostResponseDto createPost(PostRequestDto postRequestDto, String username);
+    PostResponseDto updatePost(String slug, PostRequestDto postRequestDto, String username, boolean isAdmin);
+    PostResponseDto getPostBySlug(String slug, String username, boolean isAdmin);
+    List<PostResponseDto> getAllPosts(String username, boolean isAdmin);
+    void deletePost(String slug, String username, boolean isAdmin);
 }

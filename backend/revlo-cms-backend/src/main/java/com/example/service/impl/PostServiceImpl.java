@@ -3,102 +3,119 @@ package com.example.service.impl;
 import com.example.dto.PostRequestDto;
 import com.example.dto.PostResponseDto;
 import com.example.entity.Post;
+import com.example.entity.User;
 import com.example.exception.BaseException;
 import com.example.exception.ErrorMessage;
 import com.example.exception.MessageType;
-import com.example.mapper.PostMapper;
 import com.example.repository.PostRepository;
+import com.example.repository.UserRepository;
 import com.example.service.IPostService;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PostServiceImpl implements IPostService {
-    @Autowired
-    private PostRepository postRepository;
 
-    @Autowired
-    private PostMapper postMapper;
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
 
-    @Override
-    public List<PostResponseDto> getAllPosts() {
-        List<PostResponseDto> response = new ArrayList<>();
-        List<Post> posts = postRepository.findAll();
-        for(Post post:posts){
-            PostResponseDto dto = new PostResponseDto();
-            BeanUtils.copyProperties(post,dto);
-            response.add(dto);
-        }
-        return response;
+    public PostServiceImpl(PostRepository postRepository, UserRepository userRepository) {
+        this.postRepository = postRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
-    public PostResponseDto createPost(PostRequestDto postRequestDto) {
-        if (postRequestDto.getSlug() == null || postRequestDto.getSlug().isBlank()) {
-            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "slug is required"));
-        }
+    public PostResponseDto createPost(PostRequestDto postRequestDto, String username) {
         if (postRepository.existsBySlug(postRequestDto.getSlug())) {
-            // Decap CMS retry/save durumlarinda ayni slug tekrar gelebilir; kayitli olani dondurup
-            // "duplicate key" patlamasini ve olasi sonsuz dongu davranisini onluyoruz.
-            Post existing = postRepository.findBySlug(postRequestDto.getSlug()).get();
-            PostResponseDto responseDto = new PostResponseDto();
-            BeanUtils.copyProperties(existing, responseDto);
-            return responseDto;
+            throw new RuntimeException("Hata: Bu slug (URL) zaten kullanımda!");
         }
-        Post post=new Post();
-        BeanUtils.copyProperties(postRequestDto,post);
-        Post savedPost = postRepository.save(post);
-        PostResponseDto responseDto = new PostResponseDto();
-        BeanUtils.copyProperties(savedPost,responseDto);
-        return responseDto;
-    }
 
-    @Override
-    public PostResponseDto getPostById(Long id) {
+        User author = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Yazar bulunamadı."));
+
         Post post = new Post();
-        PostResponseDto responseDto = new PostResponseDto();
-        Optional<Post> optionalPost = postRepository.findById(id);
-        if (optionalPost.isEmpty()){
-            throw new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "ID: " + id));
-        }
-        post = optionalPost.get();
-        BeanUtils.copyProperties(post,responseDto);
-        return responseDto;
-    }
-
-    @Override
-    public PostResponseDto getPostBySlug(String slug) {
-        Post post = postRepository.findBySlug(slug)
-                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "slug: " + slug)));
-        PostResponseDto responseDto = new PostResponseDto();
-        BeanUtils.copyProperties(post, responseDto);
-        return responseDto;
-    }
-
-    @Override
-    public PostResponseDto updatePostBySlug(String slug, PostRequestDto postRequestDto) {
-        Post post = postRepository.findBySlug(slug)
-                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "slug: " + slug)));
+        post.setSlug(postRequestDto.getSlug());
         post.setTitle(postRequestDto.getTitle());
-        post.setBody(postRequestDto.getBody());
-        post.setAuthor(postRequestDto.getAuthor());
-        // slug kasitli olarak degistirilmiyor: Decap'in URL'i / kimligi hep ayni kalmali.
+        post.setContent(postRequestDto.getContent());
+        post.setImage(postRequestDto.getImage());
+        post.setAuthor(author);
+
         Post savedPost = postRepository.save(post);
-        PostResponseDto responseDto = new PostResponseDto();
-        BeanUtils.copyProperties(savedPost, responseDto);
-        return responseDto;
+        return mapToDto(savedPost);
     }
 
     @Override
-    public void deletePostBySlug(String slug) {
+    public PostResponseDto updatePost(String slug, PostRequestDto postRequestDto, String username, boolean isAdmin) {
         Post post = postRepository.findBySlug(slug)
-                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "slug: " + slug)));
+                .orElseThrow(() -> new RuntimeException("Yazı bulunamadı."));
+
+        // EDITOR sadece kendi yazısını güncelleyebilir; ADMIN hepsini güncelleyebilir
+        if (!isAdmin && !post.getAuthor().getUsername().equals(username)) {
+            throw new BaseException(new ErrorMessage(MessageType.UNAUTHORIZED_ACCESS, "Bu yazıyı düzenleme yetkiniz yok"));
+        }
+
+        // Eğer kullanıcı slug'ı da değiştirdiyse ve yeni slug başkasına aitse hata fırlat
+        if (!post.getSlug().equals(postRequestDto.getSlug()) && postRepository.existsBySlug(postRequestDto.getSlug())) {
+            throw new RuntimeException("Hata: Yeni slug zaten kullanımda!");
+        }
+
+        post.setSlug(postRequestDto.getSlug());
+        post.setTitle(postRequestDto.getTitle());
+        post.setContent(postRequestDto.getContent());
+        post.setImage(postRequestDto.getImage());
+
+        Post updatedPost = postRepository.save(post);
+        return mapToDto(updatedPost);
+    }
+
+    @Override
+    public PostResponseDto getPostBySlug(String slug, String username, boolean isAdmin) {
+        Post post = postRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Yazı bulunamadı."));
+
+        if (!isAdmin && !post.getAuthor().getUsername().equals(username)) {
+            throw new BaseException(new ErrorMessage(MessageType.UNAUTHORIZED_ACCESS, "Bu yazıyı görüntüleme yetkiniz yok"));
+        }
+
+        return mapToDto(post);
+    }
+
+    @Override
+    public List<PostResponseDto> getAllPosts(String username, boolean isAdmin) {
+        List<Post> posts = isAdmin
+                ? postRepository.findAll()
+                : postRepository.findAllByAuthor_Username(username);
+
+        return posts.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void deletePost(String slug, String username, boolean isAdmin) {
+        Post post = postRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Yazı bulunamadı."));
+
+        if (!isAdmin && !post.getAuthor().getUsername().equals(username)) {
+            throw new BaseException(new ErrorMessage(MessageType.UNAUTHORIZED_ACCESS, "Bu yazıyı silme yetkiniz yok"));
+        }
+
         postRepository.delete(post);
     }
 
+    // Entity -> DTO Dönüşümünü yapan yardımcı metot (Boilerplate kodu engeller)
+    private PostResponseDto mapToDto(Post post) {
+        return new PostResponseDto(
+                post.getId(),
+                post.getSlug(),
+                post.getTitle(),
+                post.getImage(),
+                post.getContent(),
+                post.getAuthor().getUsername(), // Yazarın sadece adını dönüyoruz
+                post.getCreatedAt(),
+                post.getUpdatedAt()
+        );
+    }
 }
