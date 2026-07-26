@@ -56,6 +56,9 @@ public class SecurityConfig {
                                 // Artık herkes kayıt olamıyor - sadece giriş yapmış bir ADMIN
                                 // yeni kullanıcı (editör) oluşturabilir.
                                 .requestMatchers("/api/auth/signup").hasAuthority("ADMIN")
+                                // CMS'i kullanan kişinin kendi sitesi (frontend) için:
+                                // giriş yapmadan post okuyabilsin diye herkese açık.
+                                .requestMatchers("/api/public/**").permitAll()
                                 .requestMatchers("/api/entries/**").authenticated()
                                 .requestMatchers("/api/media/**").authenticated()
                                 .anyRequest().permitAll()

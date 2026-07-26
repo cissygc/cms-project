@@ -11,4 +11,10 @@ public interface IPostService {
     PostResponseDto getPostBySlug(String slug, String username, boolean isAdmin);
     List<PostResponseDto> getAllPosts(String username, boolean isAdmin);
     void deletePost(String slug, String username, boolean isAdmin);
+
+    // Bunlar CMS paneli için DEĞİL - CMS'i kullanacak kişinin kendi
+    // sitesinin (frontend) postları göstermek için çağıracağı, giriş
+    // gerektirmeyen herkese açık metodlar.
+    List<PostResponseDto> getAllPublicPosts();
+    PostResponseDto getPublicPostBySlug(String slug);
 }

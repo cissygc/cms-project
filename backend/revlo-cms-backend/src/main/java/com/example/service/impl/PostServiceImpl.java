@@ -105,6 +105,22 @@ public class PostServiceImpl implements IPostService {
         postRepository.delete(post);
     }
 
+    // ---------- CMS dışındaki (herkese açık) siteler için ----------
+
+    @Override
+    public List<PostResponseDto> getAllPublicPosts() {
+        return postRepository.findAll().stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public PostResponseDto getPublicPostBySlug(String slug) {
+        Post post = postRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Yazı bulunamadı."));
+        return mapToDto(post);
+    }
+
     // Entity -> DTO Dönüşümünü yapan yardımcı metot (Boilerplate kodu engeller)
     private PostResponseDto mapToDto(Post post) {
         return new PostResponseDto(
