@@ -36,7 +36,6 @@ function toEntry(post) {
   const entryData = {
     title: post.title,
     body: post.content,
-    author: post.authorName,
     image: post.image || "",
     date: post.createdAt || new Date().toISOString(),
   };
@@ -240,6 +239,12 @@ class MyCustomBackend {
     } catch (e) {
       // yoksay
     }
+    // Decap CMS, farklı bir hesapla giriş yapıldığında entries/media
+    // önbelleğini kendi başına temizlemiyor (bilinen davranış). Bu yüzden
+    // çıkışta sayfayı tamamen yeniliyoruz ki yeni hesap temiz başlasın.
+    setTimeout(function () {
+      window.location.reload();
+    }, 50);
     return null;
   }
 
@@ -781,3 +786,69 @@ const CustomImagePreview = createClass({
 });
 
 CMS.registerWidget("customImage", CustomImageControl, CustomImagePreview);
+
+/* ============================================================
+ * Decap CMS, bir post kaydedildikten sonra "Yazılar" listesini kendi
+ * başına tazelemiyor (entriesByFolder'ı tekrar çağırmıyor) - bu yüzden
+ * yeni/güncellenen post, sayfa manuel yenilenmeden listede görünmüyor.
+ * postSave event'inde sayfayı yeniliyoruz ki liste her zaman güncel olsun.
+ * ============================================================ */
+CMS.registerEventListener({
+  name: "postSave",
+  handler: function () {
+    setTimeout(function () {
+      window.location.reload();
+    }, 400);
+  },
+});
+
+/* ============================================================
+ * Sadece ADMIN rolündeki kullanıcıya görünen, sabit (fixed) konumlu
+ * "Kullanıcı Ekle" butonu. Decap CMS'in kendi nav bar'ına resmi olarak
+ * eleman ekleme desteği yok, bu yüzden Decap'in DOM'una bağımlı
+ * olmayan, sayfanın üstünde sabit duran ayrı bir buton kullanıyoruz.
+ * localStorage her saniye kontrol edilir; giriş/çıkış yapıldığında
+ * (biz zaten sayfayı yeniliyoruz) buton otomatik doğru görünür.
+ * ============================================================ */
+(function () {
+  function ensureAdminButton() {
+    const existing = document.getElementById("revlo-add-user-btn");
+    let user = null;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      user = stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      // yoksay
+    }
+
+    const shouldShow = !!(user && user.role === "ADMIN");
+
+    if (shouldShow && !existing) {
+      const btn = document.createElement("a");
+      btn.id = "revlo-add-user-btn";
+      btn.href = "add-editor.html";
+      btn.textContent = "👤 Kullanıcı Ekle";
+      Object.assign(btn.style, {
+        position: "fixed",
+        bottom: "24px",
+        right: "24px",
+        zIndex: "10000",
+        background: "#1e88e5",
+        color: "#fff",
+        padding: "14px 20px",
+        borderRadius: "999px",
+        fontFamily: "sans-serif",
+        fontSize: "14px",
+        fontWeight: "600",
+        textDecoration: "none",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+      });
+      document.body.appendChild(btn);
+    } else if (!shouldShow && existing) {
+      existing.remove();
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", ensureAdminButton);
+  setInterval(ensureAdminButton, 1000);
+})();

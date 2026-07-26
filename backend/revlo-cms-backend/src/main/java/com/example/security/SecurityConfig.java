@@ -52,7 +52,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configure(http))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/api/auth/**").permitAll()
+                        auth.requestMatchers("/api/auth/signin").permitAll()
+                                // Artık herkes kayıt olamıyor - sadece giriş yapmış bir ADMIN
+                                // yeni kullanıcı (editör) oluşturabilir.
+                                .requestMatchers("/api/auth/signup").hasAuthority("ADMIN")
                                 .requestMatchers("/api/entries/**").authenticated()
                                 .requestMatchers("/api/media/**").authenticated()
                                 .anyRequest().permitAll()
