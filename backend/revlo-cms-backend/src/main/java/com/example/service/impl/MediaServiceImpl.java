@@ -17,6 +17,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -66,8 +69,15 @@ public class MediaServiceImpl implements IMediaService {
             // Veritabanı kaydını oluştur
             Media media = new Media();
             media.setFileName(fileName);
-            // Frontend'in görseli çekebilmesi için yönlendirme URL'i
-            media.setFileUrl("/uploads/" + fileName);
+            // Frontend'in görseli çekebilmesi için yönlendirme URL'i.
+            // ÖNEMLİ: fileName; boşluk, '#', '%' gibi karakterler içerebilir
+            // (örn. "#reeonn #domundi.jpeg"). Bunlar URL-encode edilmeden
+            // <img src> içinde kullanılırsa tarayıcı '#' sonrasını "fragment"
+            // sayıp görseli hiç isteyemez (kırık görsel ikonu). Bu yüzden
+            // sadece dosya adını URL-encode ediyoruz, diskteki gerçek dosya
+            // adı (media.getFileName()) her zaman ORİJİNAL/encode edilmemiş
+            // haliyle kalıyor.
+            media.setFileUrl("/uploads/" + encodeUrlSegment(fileName));
             media.setFileType(file.getContentType());
             media.setFileSize(file.getSize());
             media.setUser(user);
@@ -109,10 +119,24 @@ public class MediaServiceImpl implements IMediaService {
                 .map(media -> new MediaResponseDto(
                         String.valueOf(media.getId()),
                         media.getFileName(),
-                        toAbsoluteUrl(media.getFileUrl()),
+                        // Eski (bu düzeltmeden önce) yüklenmiş kayıtların fileUrl'i encode
+                        // edilmemiş olabilir. Bu yüzden URL'i her zaman media.getFileName()'den
+                        // TAZE olarak (encode ederek) kuruyoruz; stored fileUrl'e güvenmiyoruz.
+                        toAbsoluteUrl("/uploads/" + encodeUrlSegment(media.getFileName())),
                         media.getFileSize()
                 ))
                 .collect(Collectors.toList());
+    }
+
+    // Dosya adındaki boşluk, '#', '%', 'ç'/'ş' gibi Türkçe karakterleri vs.
+    // URL'de güvenli hale getirir. URLEncoder query-string encoding kullandığı
+    // için boşluğu '+' yapar; path segmentinde bu yanlış olacağından '%20'ye çeviriyoruz.
+    private String encodeUrlSegment(String segment) {
+        try {
+            return URLEncoder.encode(segment, StandardCharsets.UTF_8.name()).replace("+", "%20");
+        } catch (UnsupportedEncodingException e) {
+            return segment;
+        }
     }
 
     @Transactional
