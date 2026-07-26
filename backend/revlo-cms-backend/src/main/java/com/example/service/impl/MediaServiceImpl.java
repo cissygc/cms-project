@@ -4,6 +4,9 @@ import com.example.dto.media.MediaRequestDto;
 import com.example.dto.media.MediaResponseDto;
 import com.example.entity.Media;
 import com.example.entity.User;
+import com.example.exception.BaseException;
+import com.example.exception.ErrorMessage;
+import com.example.exception.MessageType;
 import com.example.repository.MediaRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IMediaService;
@@ -38,7 +41,7 @@ public class MediaServiceImpl implements IMediaService {
     @Override
     public MediaResponseDto uploadMedia(MediaRequestDto mediaRequestDto, String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı."));
+                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Kullanıcı bulunamadı")));
 
         MultipartFile file = mediaRequestDto.getFile();
 
@@ -97,7 +100,7 @@ public class MediaServiceImpl implements IMediaService {
     @Override
     public List<MediaResponseDto> getUserMedia(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı."));
+                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Kullanıcı bulunamadı")));
 
         // Sadece giriş yapan kullanıcıya ait görselleri çekiyoruz
         List<Media> userMedia = mediaRepository.findAllByUserId(user.getId());
@@ -116,11 +119,11 @@ public class MediaServiceImpl implements IMediaService {
     @Override
     public void deleteMedia(Long id, String username) {
         Media media = mediaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Medya bulunamadı."));
+                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Medya bulunamadı")));
 
         // Silmeye çalışan kişi, medyayı yükleyen kişi mi kontrolü
         if (!media.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Bu dosyayı silme yetkiniz yok.");
+            throw new BaseException(new ErrorMessage(MessageType.UNAUTHORIZED_ACCESS, "Bu dosyayı silme yetkiniz yok"));
         }
 
         try {

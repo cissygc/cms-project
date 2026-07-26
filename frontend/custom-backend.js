@@ -21,6 +21,56 @@ const MEDIA_URL = `${BASE_URL}/api/media`;
 
 const STORAGE_KEY = "revlo-cms-user";
 
+/* ============================================================
+ * Basit Toast Bildirim Sistemi
+ * Sağ üstte kısa süreliğine görünen küçük bildirimler.
+ * Kullanım: showToast("✔ Kaydedildi") veya showToast("Hata oluştu", "error")
+ * ============================================================ */
+function showToast(message, type) {
+  type = type || "success";
+  let container = document.getElementById("revlo-toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "revlo-toast-container";
+    Object.assign(container.style, {
+      position: "fixed",
+      top: "20px",
+      right: "20px",
+      zIndex: "10001",
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
+    });
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement("div");
+  toast.textContent = message;
+  Object.assign(toast.style, {
+    background: type === "error" ? "#c0392b" : "#2e7d32",
+    color: "#fff",
+    padding: "12px 18px",
+    borderRadius: "6px",
+    fontFamily: "sans-serif",
+    fontSize: "14px",
+    fontWeight: "600",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+    opacity: "0",
+    transition: "opacity .2s ease",
+    maxWidth: "320px",
+  });
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = "1";
+  });
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 250);
+  }, 3000);
+}
+
 function slugify(text) {
   return (text || "")
     .toString()
@@ -340,6 +390,7 @@ class MyCustomBackend {
       );
       if (!updateResponse.ok) {
         const message = await extractErrorMessage(updateResponse, "Güncelleme reddedildi.");
+        showToast(message, "error");
         throw new Error(message);
       }
       savedPost = await updateResponse.json();
@@ -350,11 +401,13 @@ class MyCustomBackend {
       });
       if (!createResponse.ok) {
         const message = await extractErrorMessage(createResponse, "Sunucu işlemi reddetti.");
+        showToast(message, "error");
         throw new Error(message);
       }
       savedPost = await createResponse.json();
     }
 
+    showToast("✔ Yazı kaydedildi");
     return toEntry(savedPost);
   }
 
@@ -389,6 +442,7 @@ class MyCustomBackend {
       );
     })
   );
+  showToast("✔ Silindi");
 }
   // ---------- Media ----------
 
@@ -473,6 +527,7 @@ class MyCustomBackend {
       if (!this.mediaList) this.mediaList = [];
       this.mediaList.push(mediaItem);
 
+showToast("✔ Yüklendi");
 return {
     id: mediaItem.id,
     name: mediaItem.name,
@@ -482,6 +537,7 @@ return {
 };
     } catch (error) {
       console.error("Medya yükleme hatası:", error);
+      showToast(error.message || "Medya yüklenemedi.", "error");
       throw error;
     }
   }
@@ -499,8 +555,10 @@ return {
         throw new Error(message);
       }
       this.mediaList = (this.mediaList || []).filter((m) => m.id !== id);
+      showToast("✔ Medya silindi");
     } catch (error) {
       console.error("Medya silme hatası:", error);
+      showToast(error.message || "Medya silinemedi.", "error");
       throw error;
     }
   }
@@ -811,8 +869,30 @@ CMS.registerEventListener({
  * (biz zaten sayfayı yeniliyoruz) buton otomatik doğru görünür.
  * ============================================================ */
 (function () {
+  function makeFloatingButton(id, href, text, bottomOffset, background) {
+    const btn = document.createElement("a");
+    btn.id = id;
+    btn.href = href;
+    btn.textContent = text;
+    Object.assign(btn.style, {
+      position: "fixed",
+      bottom: bottomOffset,
+      right: "24px",
+      zIndex: "10000",
+      background: background,
+      color: "#fff",
+      padding: "14px 20px",
+      borderRadius: "999px",
+      fontFamily: "sans-serif",
+      fontSize: "14px",
+      fontWeight: "600",
+      textDecoration: "none",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+    });
+    document.body.appendChild(btn);
+  }
+
   function ensureAdminButton() {
-    const existing = document.getElementById("revlo-add-user-btn");
     let user = null;
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -821,31 +901,31 @@ CMS.registerEventListener({
       // yoksay
     }
 
-    const shouldShow = !!(user && user.role === "ADMIN");
+    const isLoggedIn = !!(user && user.token);
+    const isAdmin = isLoggedIn && user.role === "ADMIN";
 
-    if (shouldShow && !existing) {
-      const btn = document.createElement("a");
-      btn.id = "revlo-add-user-btn";
-      btn.href = "add-editor.html";
-      btn.textContent = "👤 Kullanıcı Ekle";
-      Object.assign(btn.style, {
-        position: "fixed",
-        bottom: "24px",
-        right: "24px",
-        zIndex: "10000",
-        background: "#1e88e5",
-        color: "#fff",
-        padding: "14px 20px",
-        borderRadius: "999px",
-        fontFamily: "sans-serif",
-        fontSize: "14px",
-        fontWeight: "600",
-        textDecoration: "none",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-      });
-      document.body.appendChild(btn);
-    } else if (!shouldShow && existing) {
-      existing.remove();
+    // "📊 Dashboard" butonu - giriş yapan herkes görebilir
+    const dashboardExisting = document.getElementById("revlo-dashboard-btn");
+    if (isLoggedIn && !dashboardExisting) {
+      makeFloatingButton("revlo-dashboard-btn", "dashboard.html", "📊 Dashboard", "24px", "#43a047");
+    } else if (!isLoggedIn && dashboardExisting) {
+      dashboardExisting.remove();
+    }
+
+    // "👥 Kullanıcılar" butonu - sadece ADMIN
+    const usersExisting = document.getElementById("revlo-users-btn");
+    if (isAdmin && !usersExisting) {
+      makeFloatingButton("revlo-users-btn", "users.html", "👥 Kullanıcılar", "88px", "#6d4c9f");
+    } else if (!isAdmin && usersExisting) {
+      usersExisting.remove();
+    }
+
+    // "👤 Kullanıcı Ekle" butonu - sadece ADMIN
+    const addUserExisting = document.getElementById("revlo-add-user-btn");
+    if (isAdmin && !addUserExisting) {
+      makeFloatingButton("revlo-add-user-btn", "add-editor.html", "👤 Kullanıcı Ekle", "152px", "#1e88e5");
+    } else if (!isAdmin && addUserExisting) {
+      addUserExisting.remove();
     }
   }
 
