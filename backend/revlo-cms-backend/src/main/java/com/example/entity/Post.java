@@ -5,8 +5,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "posts")
 @Data
+@Table(name = "posts")
 public class Post {
 
     @Id
@@ -19,18 +19,23 @@ public class Post {
     @Column(nullable = false)
     private String title;
 
+    // Decap'ten gelecek olan medya URL'ini tutacağımız alan
+    private String image;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String body;
+    @Column(columnDefinition = "TEXT")
+    private String content;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User author;
 
-    private String author;
+    @Column(updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

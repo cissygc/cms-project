@@ -2,7 +2,8 @@ backend:
   name: my-custom-backend
 
 media_folder: "uploads"
-public_folder: "/uploads"
+public_folder: "https://provoking-dork-purchase.ngrok-free.dev/uploads"
+
 
 collections:
   - name: "posts"
@@ -11,10 +12,27 @@ collections:
     create: true
     extension: json
     format: json
-    sortable_fields: ["date", "title", "author"]
+    sortable_fields:
+      - "date"
+      - "title"
+
     fields:
-      - { label: "Başlık", name: "title", widget: "string", required: true }
-      - { label: "Tarih", name: "date", widget: "datetime", default: "", required: false }
-      - { label: "Kapak Fotoğrafı", name: "image", widget: "image", required: false }
-      - { label: "İçerik", name: "body", widget: "markdown", required: true }
-      - { label: "Yazar", name: "author", widget: "string", required: true }
+      - label: "Başlık"
+        name: "title"
+        widget: "string"
+        required: true
+
+      - label: "Tarih"
+        name: "date"
+        widget: "datetime"
+        required: false
+
+      - label: "Kapak Fotoğrafı"
+        name: "image"
+        widget: "customImage"
+        required: false
+
+      - label: "İçerik"
+        name: "body"
+        widget: "markdown"
+        required: true
