@@ -7,6 +7,7 @@ import com.example.entity.User;
 import com.example.repository.MediaRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IMediaService;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,9 +42,12 @@ public class MediaServiceImpl implements IMediaService {
 
         MultipartFile file = mediaRequestDto.getFile();
 
-        // Dosya ismi çakışmalarını önlemek için UUID kullanıyoruz
-        String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
-        String fileName = UUID.randomUUID().toString() + "_" + originalFilename;
+        // Dosya adını olduğu gibi kullanıyoruz. NOT: Decap CMS, resim alanının değerini
+        // (public_folder + seçilen dosyanın adı) şeklinde KENDİ İÇİNDE oluşturuyor —
+        // yani sunucudaki gerçek dosya adı ile bu bileşik yol MUTLAKA aynı olmalı.
+        // Önceden UUID öneki eklediğimiz için post içindeki görsel her zaman "bulunamadı"
+        // hatası veriyordu. Aynı isimli dosya tekrar yüklenirse üzerine yazılır.
+        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 
         try {
             // Uploads klasörü yoksa oluştur
@@ -109,6 +112,7 @@ public class MediaServiceImpl implements IMediaService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     @Override
     public void deleteMedia(Long id, String username) {
         Media media = mediaRepository.findById(id)
@@ -126,6 +130,8 @@ public class MediaServiceImpl implements IMediaService {
 
             // Veritabanından sil
             mediaRepository.delete(media);
+
+            System.out.println("Silindi mi? " + mediaRepository.existsById(id));
         } catch (IOException ex) {
             throw new RuntimeException("Dosya fiziksel olarak silinemedi.", ex);
         }
