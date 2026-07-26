@@ -881,3 +881,164 @@ div[class*="EditorControlBar"] {
   transform: translateY(-1px) !important;
   box-shadow: 0 4px 12px rgba(106, 27, 154, 0.35) !important;
 }
+/* ======================================================
+   REVLO KART TASARIMI - ÖZEL EZİCİ STİLLER
+   ====================================================== */
+
+/* Konteyner Düzeni */
+div[class*="EntriesContainer"],
+div[class*="EntriesCollection"],
+div[class*="CardsGrid"],
+ul[class*="CardsGrid"] {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
+  gap: 24px !important;
+  padding: 10px 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* CMS'in Varsayılan Kaba Buton/Kutu Elemanlarını Gizle */
+div[class*="EntriesContainer"] > a,
+div[class*="EntriesContainer"] > div:not(.custom-post-card),
+ul[class*="CardsGrid"] > li:not(:has(.custom-post-card)) {
+  display: none !important;
+}
+
+/* Yeni Özel Kart Kapsayıcısı */
+.custom-post-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.25s ease !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 380px !important;
+}
+
+.custom-post-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* 1. Kapak Fotoğrafı Alanı */
+.custom-card-image-box {
+  width: 100% !important;
+  height: 200px !important;
+  background-color: #f8fafc !important;
+  overflow: hidden !important;
+  position: relative !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.custom-card-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  transition: transform 0.3s ease !important;
+}
+
+.custom-post-card:hover .custom-card-img {
+  transform: scale(1.04) !important;
+}
+
+.image-placeholder {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #94a3b8 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  background: #f1f5f9 !important;
+}
+
+/* 2. Kart Metin Alanı */
+.custom-card-content-box {
+  padding: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-grow: 1 !important;
+}
+
+.custom-card-title {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  margin: 0 0 10px 0 !important;
+  line-height: 1.4 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.custom-card-desc {
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #64748b !important;
+  margin: 0 0 16px 0 !important;
+  flex-grow: 1 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.custom-read-more {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-top: auto !important;
+  transition: color 0.2s ease !important;
+}
+
+.custom-post-card:hover .custom-read-more {
+  color: #2563eb !important;
+}
+/* ======================================================
+   DÜZENİ BOZMADAN HEADER SABİTLEME (LAYOUT-FRIENDLY)
+   ====================================================== */
+
+/* 1. Ana sayfa kapsayıcısının dışa taşmasını kitle */
+html, body, #nc-root {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+/* 2. Header'ı sticky yaparak üstte tut */
+#nc-root header,
+header, 
+div[class*="AppHeader"] {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* 3. Sadece orta/sağ içerik alanının kendi içinde kaymasını sağla */
+div[class*="AppMainContainer"],
+main {
+  height: calc(100vh - 56px) !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* 4. Sol menünün yüksekliğini ayarla ve kendi içinde kilitli tut */
+aside,
+div[class*="SidebarContainer"],
+div[class*="Sidebar"] {
+  height: calc(100vh - 56px) !important;
+  top: 56px !important;
+}

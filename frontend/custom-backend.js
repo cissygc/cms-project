@@ -1,4 +1,4 @@
-const API_BASE = "https://provoking-dork-purchase.ngrok-free.dev/rest/api/posts";
+const API_BASE = "https://YENI-NGROK-ADRESINIZ.ngrok-free.dev/rest/api/posts";
 
 function slugify(text) {
   return (text || "")
@@ -425,3 +425,174 @@ function checkOverlay() {
   }
 }
 setInterval(checkOverlay, 300);
+function renderPostsGrid(posts) {
+  const container = document.querySelector('div[class*="EntriesContainer"]');
+
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  posts.forEach(post => {
+
+    const card = document.createElement("div");
+    card.className = "custom-post-card";
+
+    card.innerHTML = `
+      <div class="custom-card-image">
+        ${
+          post.image
+            ? `<img src="${post.image}" alt="${post.title}">`
+            : `<div class="image-placeholder">📷</div>`
+        }
+      </div>
+
+      <div class="custom-card-content">
+
+        <h2>${post.title}</h2>
+
+        <p>
+          ${(post.body || "")
+            .replace(/[#>*`]/g, "")
+            .substring(0,140)}...
+        </p>
+
+        <span class="read-more">
+          Read More →
+        </span>
+
+      </div>
+    `;
+
+    card.onclick = () => {
+      location.hash = `#/collections/posts/entries/${post.slug}`;
+    };
+
+    container.appendChild(card);
+
+  });
+}
+// ======================================================
+// GİRİŞ EKRANINDAKİ YAZILARI KART YAPISINA DÖNÜŞTÜRÜCÜ (KESİN ÇÖZÜM)
+// ======================================================
+function applyCustomCardLayout() {
+  // CMS'in kart konteynerini bul
+  const container = document.querySelector('div[class*="EntriesContainer"]') || 
+                    document.querySelector('ul[class*="CardsGrid"]') || 
+                    document.querySelector('div[class*="CardsGrid"]');
+                    
+  if (!container) return;
+
+  // Sadece ana liste sayfasındaysak çalış (Detay sayfasında veya overlay'de tetiklenme)
+  if (window.location.hash.includes('/entries/')) {
+    container.removeAttribute('data-custom-rendered');
+    return;
+  }
+
+  // Zaten render edildiyse tekrar çalıştırma
+  if (container.getAttribute('data-custom-rendered') === 'true') return;
+
+  const posts = getLocalPosts();
+  if (!posts || posts.length === 0) return;
+
+  container.innerHTML = "";
+  container.setAttribute('data-custom-rendered', 'true');
+
+  posts.forEach(post => {
+    const card = document.createElement("div");
+    card.className = "custom-post-card";
+
+    // Resim var mı kontrol et
+    const imageHtml = post.image
+      ? `<img src="${post.image}" alt="${post.title}" class="custom-card-img" />`
+      : `<div class="image-placeholder">📷 Kapak Fotoğrafı Yok</div>`;
+
+    // İçerik özet metni
+    const cleanBody = (post.body || "").replace(/[#>*`]/g, "").trim();
+    const shortBody = cleanBody.length > 120 ? cleanBody.substring(0, 120) + "..." : cleanBody;
+
+    card.innerHTML = `
+      <div class="custom-card-image-box">
+        ${imageHtml}
+      </div>
+      <div class="custom-card-content-box">
+        <h2 class="custom-card-title">${post.title}</h2>
+        <p class="custom-card-desc">${shortBody || "Açıklama mevcut değil."}</p>
+        <span class="custom-read-more">Read More &rarr;</span>
+      </div>
+    `;
+
+    // Karta tıklanınca ilgili yazıya git
+    card.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      location.hash = `#/collections/posts/entries/${post.slug}`;
+    };
+
+    container.appendChild(card);
+  });
+}
+
+// Sayfa değişimlerini veya CMS yüklenmesini anlık dinle
+setInterval(applyCustomCardLayout, 300);
+// ======================================================
+// GİRİŞ EKRANINDAKİ YAZILARI KART YAPISINA DÖNÜŞTÜRÜCÜ (GÜVENLİ FORM SÜRÜMÜ)
+// ======================================================
+function applyCustomCardLayout() {
+  const hash = window.location.hash || "";
+
+  // EĞER DETAY/OKUMA SAYFASINDAYSAK VEYA YENİ YAZI OLUŞTURMA SAYFASINDAYSAK HİÇBİR ŞEY YAPMA!
+  if (hash.includes('/entries/') || hash.includes('/new')) {
+    const container = document.querySelector('div[class*="EntriesContainer"]');
+    if (container) container.removeAttribute('data-custom-rendered');
+    return;
+  }
+
+  // Sadece ana liste sayfasındaysak devam et
+  const container = document.querySelector('div[class*="EntriesContainer"]') || 
+                    document.querySelector('ul[class*="CardsGrid"]') || 
+                    document.querySelector('div[class*="CardsGrid"]');
+                    
+  if (!container) return;
+
+  // Zaten render edildiyse tekrar çalıştırma
+  if (container.getAttribute('data-custom-rendered') === 'true') return;
+
+  const posts = getLocalPosts();
+  if (!posts || posts.length === 0) return;
+
+  container.innerHTML = "";
+  container.setAttribute('data-custom-rendered', 'true');
+
+  posts.forEach(post => {
+    const card = document.createElement("div");
+    card.className = "custom-post-card";
+
+    const imageHtml = post.image
+      ? `<img src="${post.image}" alt="${post.title}" class="custom-card-img" />`
+      : `<div class="image-placeholder">📷 Kapak Fotoğrafı Yok</div>`;
+
+    const cleanBody = (post.body || "").replace(/[#>*`]/g, "").trim();
+    const shortBody = cleanBody.length > 120 ? cleanBody.substring(0, 120) + "..." : cleanBody;
+
+    card.innerHTML = `
+      <div class="custom-card-image-box">
+        ${imageHtml}
+      </div>
+      <div class="custom-card-content-box">
+        <h2 class="custom-card-title">${post.title}</h2>
+        <p class="custom-card-desc">${shortBody || "Açıklama mevcut değil."}</p>
+        <span class="custom-read-more">Read More &rarr;</span>
+      </div>
+    `;
+
+    card.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      location.hash = `#/collections/posts/entries/${post.slug}`;
+    };
+
+    container.appendChild(card);
+  });
+}
+
+setInterval(applyCustomCardLayout, 300);
