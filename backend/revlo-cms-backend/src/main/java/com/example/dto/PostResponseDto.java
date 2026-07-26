@@ -1,23 +1,19 @@
 package com.example.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+
 import java.time.LocalDateTime;
 
 @Data
-public class PostResponseDto{
-
+@AllArgsConstructor
+public class PostResponseDto {
     private Long id;
-
     private String slug;
-
     private String title;
-
-
-    private String body;
-
-
-    private String author;
-
-
+    private String image;
+    private String content;
+    private String authorName;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

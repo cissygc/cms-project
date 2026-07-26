@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum MessageType {
     NO_RECORD_EXIST("1001", "No record found with the provided identifier"),
     GENERAL_EXCEPTION("9999", "An unexpected internal server error occurred"),
+    UNAUTHORIZED_ACCESS("1003", "You do not have permission to access or modify this resource"),
     VALIDATION_ERROR("1002", "The provided data is invalid or missing required fields");
 
     private final String code;

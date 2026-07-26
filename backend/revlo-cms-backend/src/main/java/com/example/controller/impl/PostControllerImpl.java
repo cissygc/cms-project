@@ -4,52 +4,66 @@ import com.example.controller.IPostController;
 import com.example.dto.PostRequestDto;
 import com.example.dto.PostResponseDto;
 import com.example.service.IPostService;
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/rest/api/posts")
 public class PostControllerImpl implements IPostController {
-    @Autowired
-    private IPostService postService;
 
-    @Override
-    @GetMapping(path = "/list")
-    public List<PostResponseDto> getAllPosts() {
-        return postService.getAllPosts();
+    private final IPostService postService;
+
+    public PostControllerImpl(IPostService postService) {
+        this.postService = postService;
+    }
+
+    // Kullanıcının ADMIN yetkisine sahip olup olmadığını kontrol eden yardımcı metot
+    private boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> role.equals("ADMIN"));
     }
 
     @Override
-    @PostMapping(path="/create-post")
-    public PostResponseDto createPost(@Valid @RequestBody PostRequestDto postRequestDto) {
-        return postService.createPost(postRequestDto);
+    public ResponseEntity<?> getAllPosts(Authentication authentication) {
+        String username = authentication.getName();
+        List<PostResponseDto> posts = postService.getAllPosts(username, isAdmin(authentication));
+        return ResponseEntity.ok(posts);
     }
 
     @Override
-    @GetMapping(path = "/id/{id}")
-    public PostResponseDto getPostById(@PathVariable(name = "id") Long id) {
-        return postService.getPostById(id);
-    }
-
-    // Decap CMS bu 3 endpoint'i slug uzerinden kullaniyor (bkz. custom-backend.js)
-    @Override
-    @GetMapping(path = "/slug/{slug}")
-    public PostResponseDto getPostBySlug(@PathVariable(name = "slug") String slug) {
-        return postService.getPostBySlug(slug);
+    public ResponseEntity<?> getPostBySlug(String slug, Authentication authentication) {
+        String username = authentication.getName();
+        PostResponseDto post = postService.getPostBySlug(slug, username, isAdmin(authentication));
+        return ResponseEntity.ok(post);
     }
 
     @Override
-    @PutMapping(path = "/slug/{slug}")
-    public PostResponseDto updatePostBySlug(@PathVariable(name = "slug") String slug, @Valid @RequestBody PostRequestDto postRequestDto) {
-        return postService.updatePostBySlug(slug, postRequestDto);
+    public ResponseEntity<?> createPost(PostRequestDto postRequestDto, Authentication authentication) {
+        // İsteği atan giriş yapmış kullanıcının adını alıyoruz
+        String username = authentication.getName();
+
+        PostResponseDto createdPost = postService.createPost(postRequestDto, username);
+        return ResponseEntity.ok(createdPost);
     }
 
     @Override
-    @DeleteMapping(path = "/slug/{slug}")
-    public void deletePostBySlug(@PathVariable(name = "slug") String slug) {
-        postService.deletePostBySlug(slug);
+    public ResponseEntity<?> updatePost(String slug, PostRequestDto postRequestDto, Authentication authentication) {
+        String username = authentication.getName();
+
+        PostResponseDto updatedPost = postService.updatePost(slug, postRequestDto, username, isAdmin(authentication));
+        return ResponseEntity.ok(updatedPost);
+    }
+
+    @Override
+    public ResponseEntity<?> deletePost(String slug, Authentication authentication) {
+        String username = authentication.getName();
+
+        postService.deletePost(slug, username, isAdmin(authentication));
+        return ResponseEntity.ok(Map.of("message", "Yazı başarıyla silindi."));
     }
 }

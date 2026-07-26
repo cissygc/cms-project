@@ -1,0 +1,66 @@
+package com.example.security;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableMethodSecurity
+public class SecurityConfig {
+
+    private final UserDetailsServiceImpl userDetailsService;
+    private final AuthTokenFilter authTokenFilter;
+
+    public SecurityConfig(UserDetailsServiceImpl userDetailsService, AuthTokenFilter authTokenFilter) {
+        this.userDetailsService = userDetailsService;
+        this.authTokenFilter = authTokenFilter;
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        // Spring Security'nin yeni sürümlerinde no-arg constructor ve
+        // setUserDetailsService(...) kaldırıldı/deprecated oldu.
+        // Artık UserDetailsService constructor üzerinden veriliyor.
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+
+        return authProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configure(http))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth ->
+                        auth.requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/api/entries/**").authenticated()
+                                .requestMatchers("/api/media/**").authenticated()
+                                .anyRequest().permitAll()
+                );
+
+        http.authenticationProvider(authenticationProvider());
+        http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+}
