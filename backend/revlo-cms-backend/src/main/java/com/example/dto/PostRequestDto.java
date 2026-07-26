@@ -1,21 +1,20 @@
-package com.example.dto; // Kendi paketine göre ayarla
+package com.example.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class PostRequestDto {
 
+    @NotBlank(message = "Slug (URL uzantısı) boş bırakılamaz")
     private String slug;
 
-    @NotBlank(message = "Title cannot be blank")
-    @Size(min = 2, message = "Title must be at least 2 characters long")
+    @NotBlank(message = "Başlık boş bırakılamaz")
     private String title;
 
-    @NotBlank(message = "Body content cannot be blank")
-    private String body;
+    // Opsiyonel medya alanı
+    private String image;
 
-    @NotBlank(message = "Author cannot be blank")
-    private String author;
+    @NotBlank(message = "İçerik boş bırakılamaz")
+    private String content;
 }
