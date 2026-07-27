@@ -1,0 +1,24 @@
+# Node & Angular build artifacts
+node_modules/
+.angular/
+dist/
+tmp/
+out-tsc/
+.sass-cache/
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment & Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
