@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kullanıcı Ekle - Revlo CMS</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f5f7;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    padding: 32px;
+    width: 100%;
+    max-width: 380px;
+  }
+  h1 { font-size: 20px; margin: 0 0 20px 0; }
+  label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; margin-top: 14px; }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  button {
+    width: 100%;
+    padding: 11px;
+    margin-top: 20px;
+    background: #1e88e5;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  button:disabled { background: #90caf9; cursor: not-allowed; }
+  .msg { margin-top: 14px; font-size: 14px; padding: 10px; border-radius: 4px; display: none; }
+  .msg.error { background: #fdecea; color: #c0392b; display: block; }
+  .msg.success { background: #e8f5e9; color: #2e7d32; display: block; }
+  .denied { text-align: center; color: #c0392b; }
+  a.back { display: inline-block; margin-top: 16px; font-size: 13px; color: #1e88e5; text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="card" id="app">Yükleniyor...</div>
+
+  <script>
+    // Bu sayfa custom-backend.js ile AYNI localStorage anahtarını ve
+    // AYNI backend adresini kullanıyor, bilerek senkron tutuyoruz.
+    const BASE_URL = "https://provoking-dork-purchase.ngrok-free.dev";
+    const STORAGE_KEY = "revlo-cms-user";
+
+    function getStoredUser() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function renderDenied(container) {
+      container.innerHTML =
+        '<h1>Erişim reddedildi</h1>' +
+        '<p class="denied">Bu sayfayı sadece ADMIN rolündeki kullanıcılar görebilir. ' +
+        'Lütfen önce CMS panelinden ADMIN hesabıyla giriş yap.</p>' +
+        '<a class="back" href="index.html">&larr; CMS paneline dön</a>';
+    }
+
+    function renderForm(container, user) {
+      container.innerHTML =
+        '<h1>Yeni Kullanıcı Ekle</h1>' +
+        '<div id="msg" class="msg"></div>' +
+        '<form id="addUserForm">' +
+        '  <label>Kullanıcı Adı</label>' +
+        '  <input type="text" id="username" required minlength="3" />' +
+        '  <label>Şifre</label>' +
+        '  <input type="password" id="password" required minlength="6" />' +
+        '  <label>Rol</label>' +
+        '  <select id="role">' +
+        '    <option value="EDITOR">EDITOR</option>' +
+        '    <option value="ADMIN">ADMIN</option>' +
+        '  </select>' +
+        '  <button type="submit" id="submitBtn">Kullanıcı Oluştur</button>' +
+        '</form>' +
+        '<a class="back" href="index.html">&larr; CMS paneline dön</a>';
+
+      const form = document.getElementById("addUserForm");
+      const msg = document.getElementById("msg");
+      const btn = document.getElementById("submitBtn");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        msg.className = "msg";
+        msg.textContent = "";
+        btn.disabled = true;
+        btn.textContent = "Oluşturuluyor...";
+
+        const payload = {
+          username: document.getElementById("username").value.trim(),
+          password: document.getElementById("password").value,
+          role: document.getElementById("role").value,
+        };
+
+        fetch(`${BASE_URL}/api/auth/signup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
+            Authorization: `${user.type || "Bearer"} ${user.token}`,
+          },
+          body: JSON.stringify(payload),
+        })
+          .then(async (res) => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              const errorMessage =
+                (data && data.exception && data.exception.message) ||
+                "Kullanıcı oluşturulamadı.";
+              throw new Error(errorMessage);
+            }
+            msg.className = "msg success";
+            msg.textContent = `"${payload.username}" kullanıcısı (${payload.role}) başarıyla oluşturuldu.`;
+            form.reset();
+          })
+          .catch((err) => {
+            msg.className = "msg error";
+            msg.textContent = err.message || "Bir hata oluştu.";
+          })
+          .finally(() => {
+            btn.disabled = false;
+            btn.textContent = "Kullanıcı Oluştur";
+          });
+      });
+    }
+
+    const app = document.getElementById("app");
+    const user = getStoredUser();
+
+    if (!user || !user.token || user.role !== "ADMIN") {
+      renderDenied(app);
+    } else {
+      renderForm(app, user);
+    }
+  </script>
+</body>
+</html>
