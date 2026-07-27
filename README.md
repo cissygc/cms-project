@@ -320,8 +320,3 @@ Revlo CMS aims to become a flexible API-first Headless CMS where administrators 
 
 The long-term goal is to provide a scalable platform capable of serving content to any client through standardized APIs while maintaining a modern editing experience powered by Decap CMS.
 
----
-
-# License
-
-This project is licensed under the MIT License.
