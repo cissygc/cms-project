@@ -4,6 +4,7 @@ import com.example.exception.BaseException;
 import com.example.exception.MessageType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,6 +20,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = {BaseException.class})
     public ResponseEntity<ApiError<String>> handleBaseException(BaseException exception, WebRequest request) {
         return ResponseEntity.badRequest().body(createApiError(exception.getMessage(), request));
+    }
+
+    // Spring Security'nin authenticationManager.authenticate() çağrısında fırlattığı
+    // TÜM giriş hataları (yanlış şifre -> BadCredentialsException, kullanıcı yok
+    // -> UsernameNotFoundException/InternalAuthenticationServiceException) bu tek
+    // handler'a düşer. Önceden burası eksikti, ikisi de genel Exception
+    // handler'a düşüp 500 dönüyordu - şimdi düzgün bir 401 dönüyor.
+    // Kullanıcı adının var olup olmadığını belli etmemek için (güvenlik) her
+    // ikisinde de AYNI genel mesaj döndürüyoruz.
+    @ExceptionHandler(value = {AuthenticationException.class})
+    public ResponseEntity<ApiError<String>> handleAuthenticationException(AuthenticationException exception, WebRequest request) {
+        ApiError<String> apiError = createApiError("Kullanıcı adı veya şifre hatalı", request);
+        apiError.setStatus(HttpStatus.UNAUTHORIZED.value());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiError);
     }
 
     private String getHostName() {

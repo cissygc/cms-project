@@ -1,5 +1,9 @@
 # Revlo CMS — API Documentation
 
+> 💡 Bu dosya elle yazılmış özet dokümantasyondur. Backend ayaktayken
+> **canlı, interaktif ve her zaman güncel** dokümantasyon için Swagger UI'ı
+> kullan: `http://localhost:8080/swagger-ui.html` (OpenAPI JSON: `/v3/api-docs`).
+
 Tüm istekler `Content-Type: application/json` bekler (medya yükleme hariç,
 o `multipart/form-data` kullanır). Kimlik doğrulama gerektiren uç noktalarda
 `Authorization: Bearer <token>` header'ı gönderilmelidir.

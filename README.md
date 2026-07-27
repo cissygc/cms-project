@@ -55,6 +55,7 @@ Backend katmanlı mimari izler: `controller` (arayüz + implementasyon ayrı) �
 | Veritabanı | PostgreSQL |
 | Kimlik doğrulama | JWT (jjwt) |
 | Admin Panel | Decap CMS (custom backend ile) |
+| API Docs | Springdoc OpenAPI / Swagger UI |
 | Build | Maven |
 
 ## Installation
@@ -85,7 +86,16 @@ sadece giriş yapmış bir ADMIN tarafından çağrılabilir — bkz. API bölü
 
 ## API
 
-Detaylı uç nokta listesi için [`docs/API.md`](docs/API.md) dosyasına bakabilirsin.
+Backend ayaktayken interaktif dokümantasyon için:
+
+- **Swagger UI**: `http://localhost:8080/swagger-ui.html` (veya kendi backend adresin)
+- **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
+
+Kimlik doğrulama gerektiren uç noktaları denemek için önce `/api/auth/signin`'i
+çağırıp aldığın JWT'yi Swagger UI'daki sağ üstteki **Authorize** butonuna
+`Bearer <token>` formatında gir.
+
+Detaylı endpoint listesi için ayrıca [`docs/API.md`](docs/API.md) dosyasına bakabilirsin.
 Özet:
 
 | Alan | Base Path | Erişim |
