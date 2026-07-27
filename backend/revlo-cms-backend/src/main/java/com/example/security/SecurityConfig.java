@@ -64,6 +64,8 @@ public class SecurityConfig {
                                 // Kullanıcı yönetimi (listeleme + silme) sadece ADMIN'e açık
                                 .requestMatchers("/api/users/**").hasAuthority("ADMIN")
                                 .requestMatchers("/api/dashboard/**").authenticated()
+                                // Swagger / OpenAPI dokümantasyonu herkese açık
+                                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                                 .anyRequest().permitAll()
                 );
 
