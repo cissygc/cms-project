@@ -1,5 +1,6 @@
 package com.example.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * sitesinin (frontend) postları çekip göstermesi için var - giriş
  * yapmadan (JWT olmadan) herkes çağırabilir.
  */
+@Tag(name = "Public Posts", description = "Herkese açık okuma uç noktaları - JWT gerekmez")
 @RequestMapping("/api/public/posts")
 public interface IPublicPostController {
 
