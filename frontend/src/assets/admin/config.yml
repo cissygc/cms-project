@@ -1,0 +1,17 @@
+backend:
+  name: spring-rest
+
+media_folder: "src/assets/uploads"
+public_folder: "/assets/uploads"
+
+collections:
+  - name: "posts"
+    label: "Yazılar"
+    folder: "src/content/posts"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Yazı Başlığı", name: "title", widget: "string" }
+      - { label: "URL Adresi (Slug)", name: "slug", widget: "slug" }
+      - { label: "Kapak Görseli", name: "image", widget: "image" }
+      - { label: "İçerik", name: "body", widget: "markdown" }
