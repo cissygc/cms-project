@@ -1,125 +1,322 @@
 # Revlo CMS
 
-**Headless içerik yönetim sistemi.** Klasik bir CMS gibi sayfa/tema üretmez;
-amacı içerik üretimini tek bir merkezde toplayıp, REST API üzerinden farklı
-istemcilere (web sitesi, mobil uygulama, masaüstü uygulaması vb.) aynı anda
-servis etmektir.
+A modern **Headless Content Management System** built with **Spring Boot** and **PostgreSQL**.
 
-Admin panel arayüzü olarak [Decap CMS](https://decapcms.org/) kullanılır;
-Decap'in "custom backend" mekanizması sayesinde arayüz doğrudan bu projenin
-Spring Boot API'sine JWT ile bağlanır.
+Unlike traditional CMS platforms, Revlo CMS does **not generate pages or themes**. Instead, it centralizes content management and exposes it through a REST API, allowing the same content to be consumed by multiple clients such as web applications, mobile apps, and desktop applications.
+
+The administration interface is powered by **Decap CMS**, connected to a completely custom Spring Boot backend using Decap's Custom Backend API and JWT authentication.
 
 ---
 
-## Features
+## ✨ Features
 
-- 🔐 **JWT tabanlı kimlik doğrulama** — stateless auth, rol bazlı yetkilendirme (ADMIN / EDITOR)
-- 📝 **İçerik (Post) yönetimi** — oluşturma, güncelleme, silme, slug bazlı erişim
-- 🖼️ **Medya yönetimi** — dosya yükleme, kullanıcı bazlı medya listesi
-- 👥 **Kullanıcı yönetimi** — ADMIN yeni editör hesabı açabilir, tüm kullanıcıları
-  görüntüleyebilir ve silebilir (kendi hesabını / son admini silmesine izin verilmez,
-  yazısı veya medyası olan kullanıcı önce o kayıtlar temizlenmeden silinemez)
-- 📊 **Dashboard** — toplam içerik/medya/kullanıcı sayısı ve son eklenen 5 içerik
-  (EDITOR sadece kendi verilerini görür, ADMIN tüm sistemi görür)
-- 🌍 **Public API** — kimlik doğrulama gerektirmeyen, herkese açık okuma uç noktaları
-  (harici bir web sitesi veya mobil uygulama içerikleri buradan çeker)
-- ✍️ **Decap CMS entegrasyonu** — markdown editör, özel görsel widget'ı, custom backend
+- 🔐 JWT Authentication & Stateless Security
+- 👥 Role-Based Authorization (ADMIN / EDITOR)
+- 📝 Content Management (Create, Update, Delete, Slug-based Access)
+- 🖼️ Media Management (Upload, List and Delete)
+- 📊 Dashboard Statistics
+- 🌍 Public REST API
+- 📖 Swagger / OpenAPI Documentation
+- ⚡ Decap CMS Custom Backend Integration
+- ✍️ Markdown Editor
+- 🖼️ Custom Image Widget
+- 🚨 Global Exception Handling
+- 🗄️ PostgreSQL Persistence
+- 🧩 Layered Architecture (Controller → Service → Repository)
 
-## Architecture
+---
+
+# Why Headless CMS?
+
+Revlo CMS follows an **API-first Headless CMS architecture**.
+
+Instead of coupling content with presentation, all content is managed in one place and delivered through REST APIs.
+
+This allows the same content to be consumed simultaneously by different platforms:
+
+- 🌐 Web Applications
+- 📱 Mobile Applications
+- 💻 Desktop Applications
+- 🔌 Third-party Services
+
+This approach makes the system more scalable, reusable and easier to maintain.
+
+---
+
+# Why Decap CMS?
+
+Instead of building an administration panel from scratch, Revlo CMS leverages **Decap CMS** as its editing interface while replacing the default Git backend with a fully custom Spring Boot REST backend.
+
+This approach combines:
+
+- Rich Markdown editing experience
+- JWT Authentication
+- PostgreSQL persistence
+- Role-based authorization
+- Full backend control
+- REST API architecture
+
+Unlike the default Decap CMS workflow, all content is stored inside a relational database rather than Git repositories.
+
+---
+
+# Architecture
 
 ```
-┌─────────────────┐        JWT (Bearer)        ┌──────────────────────┐
-│   Decap CMS      │ ─────────────────────────▶ │   Spring Boot API     │
-│  (frontend/)      │ ◀───────────────────────── │ (backend/…-backend)  │
-│  custom-backend.js│                             │                       │
-└─────────────────┘                             │  Controller → Service │
-                                                  │      → Repository     │
-        ▲                                        │           → PostgreSQL│
-        │ herkese açık okuma                     └──────────────────────┘
-        │ (/api/public/**)
-┌─────────────────┐
-│  Diğer istemciler │  (web sitesi, mobil app, vs.)
-└─────────────────┘
+                        JWT (Bearer)
+
+        +-------------------------------+
+        |          Decap CMS            |
+        |    Custom Backend Interface   |
+        +---------------+---------------+
+                        |
+                        |
+                        v
+                Spring Boot REST API
+                        |
+      +-----------------+-----------------+
+      |                 |                 |
+      v                 v                 v
+ Authentication     Content API      Media API
+      |                 |                 |
+      +-----------------+-----------------+
+                        |
+                        v
+                  Service Layer
+                        |
+                        v
+                 Repository Layer
+                        |
+                        v
+                    PostgreSQL
+                        |
+                        v
+                Public REST API
+                        |
+         +--------------+--------------+
+         |              |              |
+      Website        Mobile App     Desktop App
 ```
 
-Backend katmanlı mimari izler: `controller` (arayüz + implementasyon ayrı) →
-`service` → `repository` (Spring Data JPA). Güvenlik `SecurityConfig` +
-`AuthTokenFilter` (JWT doğrulama) ile sağlanır. Hatalar `GlobalExceptionHandler`
-üzerinden tek tip bir JSON formatında (`{ exception: { message, ... } }`) döner.
+---
 
-## Tech Stack
+# Project Structure
 
-| Katman | Teknoloji |
-|---|---|
-| Backend | Java 21, Spring Boot, Spring Security, Spring Data JPA |
-| Veritabanı | PostgreSQL |
-| Kimlik doğrulama | JWT (jjwt) |
-| Admin Panel | Decap CMS (custom backend ile) |
-| API Docs | Springdoc OpenAPI / Swagger UI |
-| Build | Maven |
+```
+backend/
+│
+├── controller/
+├── service/
+├── repository/
+├── entity/
+├── dto/
+├── security/
+├── exception/
+└── config/
 
-## Installation
+frontend/
+│
+├── admin/
+├── config.yml
+├── custom-backend.js
+└── widgets/
+```
 
-### Backend
+---
+
+# Security
+
+Revlo CMS uses **Spring Security** together with JWT for stateless authentication.
+
+### Authentication
+
+- JWT Access Token
+- BCrypt Password Hashing
+- Stateless Authentication
+
+### Authorization
+
+- ADMIN
+- EDITOR
+
+### Security Features
+
+- Protected REST Endpoints
+- Role-Based Access Control
+- Custom JWT Authentication Filter
+- Unauthorized Request Handling
+- Global Exception Handler
+
+---
+
+# Tech Stack
+
+| Layer | Technology |
+|--------|------------|
+| Backend | Java 21 |
+| Framework | Spring Boot |
+| Security | Spring Security + JWT |
+| Database | PostgreSQL |
+| ORM | Spring Data JPA / Hibernate |
+| Documentation | Springdoc OpenAPI (Swagger UI) |
+| Admin Panel | Decap CMS |
+| Build Tool | Maven |
+
+---
+
+# Installation
+
+## Backend
 
 ```bash
 cd backend/revlo-cms-backend
-# src/main/resources/application.properties içinde DB bağlantı bilgilerini kendine göre düzenle
+```
+
+Configure your database connection inside
+
+```
+src/main/resources/application.properties
+```
+
+Run the application
+
+```bash
 ./mvnw spring-boot:run
 ```
 
-Varsayılan olarak `8080` portunda ayağa kalkar.
+Backend will start on
 
-### Frontend (Admin Panel)
+```
+http://localhost:8080
+```
 
-`frontend/` klasörünü herhangi bir statik dosya sunucusundan servis et
-(veya doğrudan `index.html`'i tarayıcıda aç). `custom-backend.js` içindeki
-`BASE_URL` değişkeninin backend adresinle eşleştiğinden emin ol.
+---
 
-```js
-// frontend/custom-backend.js
+## Admin Panel
+
+Serve the `frontend/` directory using any static file server.
+
+Make sure the backend URL matches your API.
+
+```javascript
 const BASE_URL = "https://your-backend-url";
 ```
 
-İlk ADMIN kullanıcısını veritabanına elle eklemen gerekir (kayıt endpoint'i
-sadece giriş yapmış bir ADMIN tarafından çağrılabilir — bkz. API bölümü).
+The first ADMIN account must be inserted manually into the database.
 
-## API
+User registration is restricted to authenticated ADMIN users.
 
-Backend ayaktayken interaktif dokümantasyon için:
+---
 
-- **Swagger UI**: `http://localhost:8080/swagger-ui.html` (veya kendi backend adresin)
-- **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
+# API Documentation
 
-Kimlik doğrulama gerektiren uç noktaları denemek için önce `/api/auth/signin`'i
-çağırıp aldığın JWT'yi Swagger UI'daki sağ üstteki **Authorize** butonuna
-`Bearer <token>` formatında gir.
+Once the backend is running:
 
-Detaylı endpoint listesi için ayrıca [`docs/API.md`](docs/API.md) dosyasına bakabilirsin.
-Özet:
+Swagger UI
 
-| Alan | Base Path | Erişim |
-|---|---|---|
-| Auth | `/api/auth` | signin herkese açık, signup sadece ADMIN |
-| Posts | `/api/entries/posts` | JWT gerekli |
-| Public Posts | `/api/public/posts` | herkese açık |
-| Media | `/api/media` | JWT gerekli |
-| Users | `/api/users` | sadece ADMIN |
-| Dashboard | `/api/dashboard/stats` | JWT gerekli |
+```
+http://localhost:8080/swagger-ui.html
+```
 
-## Roadmap
+OpenAPI JSON
 
-Aşağıdaki başlıklar bir sonraki sürümler için planlanan, henüz geliştirilmemiş
-özelliklerdir:
+```
+http://localhost:8080/v3/api-docs
+```
 
-- [ ] Draft / Published içerik durumu
-- [ ] Global search (başlık + slug)
-- [ ] Dynamic Collections & Dynamic Fields
-- [ ] İlişkisel içerik alanları (Relationships)
+Authenticate using
+
+```
+POST /api/auth/signin
+```
+
+and authorize Swagger with
+
+```
+Bearer <JWT_TOKEN>
+```
+
+---
+
+# API Overview
+
+| Module | Base Path | Authentication |
+|---------|-----------|----------------|
+| Authentication | `/api/auth` | Public (signin) |
+| Posts | `/api/entries/posts` | JWT |
+| Public Posts | `/api/public/posts` | Public |
+| Media | `/api/media` | JWT |
+| Users | `/api/users` | ADMIN |
+| Dashboard | `/api/dashboard/stats` | JWT |
+
+Detailed endpoint documentation can be found in:
+
+```
+docs/API.md
+```
+
+---
+
+# Current Capabilities
+
+✅ Authentication
+
+✅ Authorization
+
+✅ Content Management
+
+✅ Media Management
+
+✅ User Management
+
+✅ Dashboard
+
+✅ Public API
+
+✅ Swagger Documentation
+
+✅ Decap CMS Integration
+
+---
+
+# Roadmap
+
+## Content Management
+
+- [ ] Dynamic Collections
+- [ ] Dynamic Fields
+- [ ] Relationships
+- [ ] Nested Collections
+- [ ] Reusable Content Blocks
+
+## Publishing Workflow
+
+- [ ] Draft / Published Workflow
+- [ ] Scheduled Publishing
+- [ ] Review & Approval Workflow
+- [ ] Content Version History
+- [ ] Content Locking
+
+## Administration
+
+- [ ] Plugin System
+- [ ] Custom Field Types
+- [ ] Audit Logs
+- [ ] Activity Timeline
+- [ ] Multi-language Support
+
+## Developer Experience
+
 - [ ] GraphQL API
-- [ ] Plugin sistemi
 - [ ] Webhooks
-- [ ] İçerik sürüm geçmişi (Version History)
-- [ ] Çoklu dil desteği
-- [ ] Özel alan tipleri (Custom Field Types)
-- [ ] İstemci SDK'sı
+- [ ] Client SDK
+- [ ] OpenAPI Client Generator
+
+---
+
+# Future Vision
+
+Revlo CMS aims to become a flexible API-first Headless CMS where administrators can build and manage their own content models dynamically without modifying backend code.
+
+The long-term goal is to provide a scalable platform capable of serving content to any client through standardized APIs while maintaining a modern editing experience powered by Decap CMS.
+
