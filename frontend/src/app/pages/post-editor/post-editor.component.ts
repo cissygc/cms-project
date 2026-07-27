@@ -28,7 +28,7 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         <div class="editor-layout">
           <!-- Main Content Section -->
           <div class="glass-card editor-main-card">
-            <!-- Title Input Field (Independent) -->
+            <!-- Title Input Field -->
             <div class="form-group">
               <label class="form-label" for="title">Yazı Başlığı</label>
               <input
@@ -42,7 +42,7 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
               />
             </div>
 
-            <!-- Slug Input Field (Independent with Optional Auto-Generate Button) -->
+            <!-- Slug Input Field -->
             <div class="form-group">
               <div class="label-row">
                 <label class="form-label" for="slug">URL Adresi (Slug)</label>
@@ -251,17 +251,19 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
   `,
   styles: [
     `
+      /* White Text for Badge Chip */
       .header-badge {
         font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.08em;
-        color: var(--revlo-purple-main);
-        background: rgba(124, 58, 237, 0.1);
-        border: 1px solid rgba(124, 58, 237, 0.25);
-        padding: 4px 12px;
+        color: #ffffff !important;
+        background: linear-gradient(135deg, var(--revlo-purple-deep), var(--revlo-purple-main));
+        border: 1px solid rgba(235, 109, 247, 0.4);
+        padding: 5px 14px;
         border-radius: var(--radius-pill);
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         display: inline-block;
+        box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
       }
       .section-sub {
         color: var(--text-muted);
@@ -280,6 +282,10 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         width: 100%;
         margin-bottom: 24px;
       }
+      .form-label {
+        color: #ffffff !important;
+        font-weight: 800;
+      }
       .label-row {
         display: flex;
         justify-content: space-between;
@@ -292,10 +298,10 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
       .auto-gen-btn {
         font-size: 11px;
         font-weight: 700;
-        color: var(--revlo-purple-main);
-        background: rgba(124, 58, 237, 0.08);
-        border: 1px solid rgba(124, 58, 237, 0.2);
-        padding: 2px 8px;
+        color: var(--revlo-purple-light);
+        background: rgba(124, 58, 237, 0.2);
+        border: 1px solid rgba(235, 109, 247, 0.3);
+        padding: 3px 10px;
         border-radius: 6px;
         transition: var(--transition-smooth);
       }
@@ -303,19 +309,27 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         background: var(--revlo-purple-main);
         color: #ffffff;
       }
+
+      /* Title Input with Pure Black Text */
       .title-input {
         width: 100%;
         font-size: 18px;
         font-weight: 700;
         padding: 14px 18px;
-        background: #ffffff;
+        background: #ffffff !important;
         border: 1px solid rgba(124, 58, 237, 0.25);
-        color: var(--text-title);
+        color: #000000 !important;
+      }
+      .title-input::placeholder {
+        color: #64748b !important;
+        font-weight: 400;
       }
       .title-input:focus {
         border-color: var(--revlo-purple-main);
         box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
       }
+
+      /* Slug Input with Pure Black Text */
       .slug-input-container {
         display: flex;
         align-items: center;
@@ -328,10 +342,10 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
       .slug-badge {
         padding: 0 16px;
         font-size: 13px;
-        color: var(--revlo-purple-main);
+        color: #000000 !important;
         background: #f0ebf8;
         font-family: 'JetBrains Mono', monospace;
-        font-weight: 700;
+        font-weight: 800;
         user-select: none;
       }
       .slug-input {
@@ -342,8 +356,14 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         font-family: 'JetBrains Mono', monospace;
         font-size: 14px;
         background: #ffffff !important;
-        color: var(--text-title) !important;
+        color: #000000 !important;
+        font-weight: 600 !important;
       }
+      .slug-input::placeholder {
+        color: #64748b !important;
+        font-weight: 400;
+      }
+
       .editor-group {
         width: 100%;
       }
@@ -370,7 +390,7 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         border-radius: 8px;
         background: #ffffff;
         border: 1px solid rgba(124, 58, 237, 0.2);
-        color: var(--text-title);
+        color: #000000;
         font-size: 13px;
         display: flex;
         align-items: center;
@@ -401,6 +421,8 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         color: #ffffff;
         background: var(--revlo-purple-main);
       }
+
+      /* Textarea with Pure Black Text */
       .main-textarea {
         width: 100% !important;
         box-sizing: border-box !important;
@@ -416,13 +438,14 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         background: #ffffff !important;
         border: 1px solid rgba(124, 58, 237, 0.25) !important;
         border-top: none !important;
-        color: #1e1b4b !important;
+        color: #000000 !important;
         cursor: text !important;
         pointer-events: auto !important;
         user-select: text !important;
         position: relative !important;
         z-index: 5 !important;
         opacity: 1 !important;
+        font-weight: 500 !important;
       }
       .main-textarea:focus {
         border-color: var(--revlo-purple-main) !important;
@@ -430,7 +453,8 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         outline: none !important;
       }
       .main-textarea::placeholder {
-        color: #94a3b8 !important;
+        color: #64748b !important;
+        font-weight: 400 !important;
       }
       .preview-container {
         width: 100%;
@@ -451,7 +475,7 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
       .preview-heading {
         font-size: 24px;
         font-weight: 800;
-        color: var(--text-title);
+        color: #000000;
         margin-bottom: 4px;
       }
       .preview-slug-tag {
@@ -473,7 +497,7 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
       .preview-rendered-body {
         font-size: 15px;
         line-height: 1.8;
-        color: var(--text-main);
+        color: #000000;
         white-space: pre-wrap;
       }
       .editor-info-bar {
@@ -525,7 +549,7 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         border: 2px dashed rgba(124, 58, 237, 0.3);
         border-radius: var(--radius-md);
         text-align: center;
-        background: #f0ebf8;
+        background: rgba(235, 109, 247, 0.05);
         cursor: pointer;
         transition: var(--transition-smooth);
         display: flex;
@@ -533,7 +557,7 @@ import { MediaPickerModalComponent } from '../../components/media-picker-modal/m
         align-items: center;
       }
       .cover-dropzone:hover {
-        background: rgba(124, 58, 237, 0.08);
+        background: rgba(124, 58, 237, 0.12);
         border-color: var(--revlo-purple-main);
       }
       .dropzone-icon { font-size: 36px; margin-bottom: 8px; }

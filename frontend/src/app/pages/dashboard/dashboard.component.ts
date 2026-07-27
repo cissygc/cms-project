@@ -104,8 +104,8 @@ import { Post } from '../../models/post.model';
 
               <div class="post-footer">
                 <span class="slug-tag">/posts/{{ post.slug }}</span>
-                <a [routerLink]="['/posts/edit', post.slug]" class="btn btn-secondary btn-sm">
-                  Düzenle
+                <a [routerLink]="['/posts/edit', post.slug]" class="btn btn-purple-sm">
+                  ✏️ Düzenle
                 </a>
               </div>
             </div>
@@ -324,6 +324,24 @@ import { Post } from '../../models/post.model';
         font-family: 'JetBrains Mono', monospace;
         font-size: 11px;
         color: var(--revlo-purple-light);
+      }
+      .btn-purple-sm {
+        background: linear-gradient(135deg, var(--revlo-purple-main), var(--revlo-purple-bright)) !important;
+        color: #ffffff !important;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: var(--radius-pill);
+        box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
+        border: 1px solid rgba(235, 109, 247, 0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .btn-purple-sm:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(124, 58, 237, 0.45);
+        opacity: 0.95;
       }
 
       .loading-state, .empty-state {

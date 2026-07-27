@@ -121,8 +121,8 @@ import { Post } from '../../models/post.model';
               <h3 class="post-title">{{ post.title }}</h3>
 
               <div class="post-actions">
-                <a [routerLink]="['/posts/edit', post.slug]" class="btn btn-secondary btn-sm">
-                  Düzenle
+                <a [routerLink]="['/posts/edit', post.slug]" class="btn btn-purple-sm">
+                  ✏️ Düzenle
                 </a>
                 <button
                   class="btn btn-danger btn-sm"
@@ -165,8 +165,8 @@ import { Post } from '../../models/post.model';
               </td>
               <td style="text-align: right">
                 <div class="table-actions">
-                  <a [routerLink]="['/posts/edit', post.slug]" class="btn btn-secondary btn-sm">
-                    Düzenle
+                  <a [routerLink]="['/posts/edit', post.slug]" class="btn btn-purple-sm">
+                    ✏️ Düzenle
                   </a>
                   <button
                     class="btn btn-danger btn-sm"
@@ -190,11 +190,21 @@ import { Post } from '../../models/post.model';
         font-weight: 800;
         letter-spacing: 0.08em;
         color: var(--revlo-purple-main);
-        margin-bottom: 6px;
+        background: rgba(124, 58, 237, 0.1);
+        border: 1px solid rgba(124, 58, 237, 0.25);
+        padding: 4px 12px;
+        border-radius: var(--radius-pill);
+        margin-bottom: 8px;
+        display: inline-block;
+      }
+      .page-title {
+        color: #000000 !important;
+        font-weight: 800;
       }
       .section-sub {
-        color: var(--revlo-text-muted);
+        color: #000000 !important;
         font-size: 14px;
+        font-weight: 500;
         margin-top: 4px;
       }
       .filter-card {
@@ -222,45 +232,53 @@ import { Post } from '../../models/post.model';
       }
       .search-input {
         padding-left: 40px;
+        color: #000000 !important;
+        background: #ffffff !important;
+        font-weight: 600 !important;
+        border: 1px solid rgba(124, 58, 237, 0.25);
+      }
+      .search-input::placeholder {
+        color: #64748b !important;
+        font-weight: 400;
       }
       .workflow-filter-tabs {
         display: flex;
         gap: 4px;
-        background: var(--revlo-input-bg);
-        padding: 3px;
-        border-radius: 10px;
-        border: 1px solid var(--revlo-card-border);
+        background: #f0ebf8;
+        padding: 4px;
+        border-radius: 12px;
+        border: 1px solid rgba(124, 58, 237, 0.2);
       }
       .wf-tab-btn {
         padding: 6px 14px;
         font-size: 12px;
         font-weight: 700;
-        color: var(--revlo-text-muted);
+        color: #000000 !important;
         border-radius: 8px;
         background: transparent;
       }
       .wf-tab-btn.active {
-        color: #ffffff;
+        color: #ffffff !important;
         background: var(--revlo-purple-main);
       }
       .view-mode-toggle {
         display: flex;
         gap: 4px;
-        background: var(--revlo-input-bg);
-        padding: 3px;
-        border-radius: 10px;
-        border: 1px solid var(--revlo-card-border);
+        background: #f0ebf8;
+        padding: 4px;
+        border-radius: 12px;
+        border: 1px solid rgba(124, 58, 237, 0.2);
       }
       .mode-btn {
         padding: 6px 12px;
         font-size: 12px;
         font-weight: 700;
-        color: var(--revlo-text-muted);
+        color: #000000 !important;
         border-radius: 8px;
         background: transparent;
       }
       .mode-btn.active {
-        color: #ffffff;
+        color: #ffffff !important;
         background: var(--revlo-purple-main);
       }
       .main-card {
@@ -269,13 +287,13 @@ import { Post } from '../../models/post.model';
       .loading-state, .empty-state {
         padding: 60px;
         text-align: center;
-        color: var(--revlo-text-muted);
+        color: #000000 !important;
       }
       .empty-icon { font-size: 40px; margin-bottom: 12px; }
       .spinner {
         width: 36px;
         height: 36px;
-        border: 3px solid var(--revlo-card-border);
+        border: 3px solid rgba(124, 58, 237, 0.2);
         border-top-color: var(--revlo-purple-main);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
@@ -290,17 +308,18 @@ import { Post } from '../../models/post.model';
       }
       .post-card {
         background: #ffffff;
-        border: 1px solid var(--revlo-card-border);
+        border: 1px solid rgba(124, 58, 237, 0.2);
         border-radius: var(--radius-card);
         overflow: hidden;
-        transition: var(--transition-revlo);
+        transition: var(--transition-smooth);
         display: flex;
         flex-direction: column;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
       }
       .post-card:hover {
         transform: translateY(-4px);
         box-shadow: var(--shadow-revlo-hover);
-        border-color: rgba(106, 27, 154, 0.3);
+        border-color: rgba(124, 58, 237, 0.4);
       }
       .post-thumb {
         position: relative;
@@ -311,7 +330,7 @@ import { Post } from '../../models/post.model';
       .post-thumb img { width: 100%; height: 100%; object-fit: cover; }
       .thumb-fallback {
         width: 100%; height: 100%;
-        background: linear-gradient(135deg, var(--revlo-purple-dark), var(--revlo-purple-main));
+        background: linear-gradient(135deg, var(--revlo-purple-deep), var(--revlo-purple-main));
         display: flex; align-items: center; justify-content: center;
         color: #ffffff; font-weight: 800; font-family: 'Outfit', sans-serif;
       }
@@ -319,9 +338,9 @@ import { Post } from '../../models/post.model';
         position: absolute;
         bottom: 10px;
         left: 10px;
-        background: rgba(15, 23, 42, 0.8);
+        background: rgba(15, 23, 42, 0.85);
         color: #ffffff;
-        font-family: 'Fira Code', monospace;
+        font-family: 'JetBrains Mono', monospace;
         font-size: 10px;
         padding: 3px 8px;
         border-radius: 6px;
@@ -335,34 +354,59 @@ import { Post } from '../../models/post.model';
       }
       .post-meta {
         font-size: 12px;
-        color: var(--revlo-text-muted);
+        color: #000000 !important;
+        font-weight: 600;
         display: flex;
         align-items: center;
         gap: 6px;
         margin-bottom: 8px;
       }
       .post-title {
-        font-size: 16px;
+        font-size: 17px;
         font-weight: 800;
-        color: var(--revlo-text-title);
+        color: #000000 !important;
         margin-bottom: 16px;
+        line-height: 1.4;
       }
       .post-actions {
         display: flex;
         justify-content: flex-end;
         gap: 8px;
         padding-top: 12px;
-        border-top: 1px solid var(--revlo-card-border);
+        border-top: 1px solid var(--border-subtle);
+      }
+      .btn-purple-sm {
+        background: linear-gradient(135deg, var(--revlo-purple-main), var(--revlo-purple-bright)) !important;
+        color: #ffffff !important;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: var(--radius-pill);
+        box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
+        border: 1px solid rgba(235, 109, 247, 0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .btn-purple-sm:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(124, 58, 237, 0.45);
+        opacity: 0.95;
       }
       .file-code-cell {
-        font-family: 'Fira Code', monospace;
+        font-family: 'JetBrains Mono', monospace;
         font-size: 12px;
         color: var(--revlo-purple-main);
-        font-weight: 600;
+        font-weight: 700;
       }
-      .table-post-title { font-weight: 700; color: var(--revlo-text-title); }
-      .author-tag { font-size: 13px; color: var(--revlo-text-body); }
-      .date-tag { font-size: 12px; color: var(--revlo-text-muted); }
+      .data-table th {
+        color: #000000 !important;
+        font-weight: 800;
+        background: #f0ebf8;
+      }
+      .table-post-title { font-weight: 800; color: #000000 !important; }
+      .author-tag { font-size: 13px; color: #000000 !important; font-weight: 600; }
+      .date-tag { font-size: 12px; color: #000000 !important; font-weight: 600; }
       .table-actions { display: flex; justify-content: flex-end; gap: 8px; }
       .btn-sm { padding: 6px 12px; font-size: 12px; }
     `,

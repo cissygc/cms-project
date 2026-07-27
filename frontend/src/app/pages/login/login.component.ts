@@ -25,7 +25,7 @@ import { AuthService } from '../../services/auth.service';
               type="text"
               id="username"
               name="username"
-              class="form-input"
+              class="form-input login-input"
               [(ngModel)]="username"
               required
               placeholder="kullaniciadi"
@@ -39,7 +39,7 @@ import { AuthService } from '../../services/auth.service';
               type="password"
               id="password"
               name="password"
-              class="form-input"
+              class="form-input login-input"
               [(ngModel)]="password"
               required
               placeholder="••••••••"
@@ -58,7 +58,7 @@ import { AuthService } from '../../services/auth.service';
         </form>
 
         <div class="login-footer">
-          <span>Revlo AI Hospitality & Content Engine</span>
+          <span>Revlo AI Content Management Engine</span>
         </div>
       </div>
     </div>
@@ -76,10 +76,10 @@ import { AuthService } from '../../services/auth.service';
         width: 100%;
         max-width: 440px;
         padding: 44px;
-        background: #ffffff;
+        background: #ffffff !important;
         border-radius: 24px;
-        box-shadow: 0px 24px 64px rgba(46, 26, 77, 0.14);
-        border: 1px solid var(--revlo-card-border);
+        box-shadow: 0px 24px 64px rgba(124, 58, 237, 0.12);
+        border: 1px solid rgba(124, 58, 237, 0.25);
       }
       .login-brand-header {
         text-align: center;
@@ -89,7 +89,7 @@ import { AuthService } from '../../services/auth.service';
         width: 56px;
         height: 56px;
         border-radius: 16px;
-        background: linear-gradient(135deg, var(--revlo-purple-dark), var(--revlo-purple-main));
+        background: linear-gradient(135deg, var(--revlo-purple-deep), var(--revlo-purple-main));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -98,12 +98,12 @@ import { AuthService } from '../../services/auth.service';
         font-size: 28px;
         color: #ffffff;
         margin: 0 auto 16px;
-        box-shadow: 0 8px 24px rgba(106, 27, 154, 0.35);
+        box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
       }
       .brand-title {
-        font-size: 28px;
+        font-size: 30px;
         font-weight: 900;
-        color: var(--revlo-text-title);
+        color: #000000 !important;
         margin-bottom: 4px;
       }
       .brand-sub {
@@ -111,7 +111,37 @@ import { AuthService } from '../../services/auth.service';
       }
       .login-desc {
         font-size: 14px;
-        color: var(--revlo-text-muted);
+        color: #475569 !important;
+        font-weight: 600;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-label {
+        font-size: 14px;
+        font-weight: 800;
+        color: #000000 !important;
+        margin-bottom: 8px;
+        display: block;
+      }
+      .login-input {
+        width: 100%;
+        padding: 14px 18px;
+        background: #ffffff !important;
+        border: 1px solid rgba(124, 58, 237, 0.25) !important;
+        color: #000000 !important;
+        font-weight: 600 !important;
+        font-size: 15px;
+        border-radius: 12px;
+      }
+      .login-input::placeholder {
+        color: #64748b !important;
+        font-weight: 400;
+      }
+      .login-input:focus {
+        border-color: var(--revlo-purple-main) !important;
+        box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15) !important;
+        outline: none;
       }
       .btn-block {
         width: 100%;
@@ -122,11 +152,11 @@ import { AuthService } from '../../services/auth.service';
       .login-footer {
         margin-top: 28px;
         padding-top: 20px;
-        border-top: 1px solid var(--revlo-card-border);
+        border-top: 1px solid rgba(124, 58, 237, 0.15);
         text-align: center;
         font-size: 12px;
-        color: var(--revlo-text-muted);
-        font-weight: 500;
+        color: #64748b !important;
+        font-weight: 600;
       }
     `,
   ],
