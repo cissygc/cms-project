@@ -1,4 +1,4 @@
 export const API_CONFIG = {
-  baseUrl: 'https://provoking-dork-purchase.ngrok-free.dev',
+  baseUrl: 'http://localhost:8080',
   storageKey: 'revlo-cms-user',
 };
