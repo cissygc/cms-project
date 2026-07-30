@@ -16,10 +16,11 @@ public class Media {
     @Column(nullable = false)
     private String fileName; // Kullanıcıya gösterilen orijinal dosya adı
 
-    private String storedFileName;
+    @Column(nullable = false)
+    private String storedFileName; // Diskte fiziksel olarak durduğu, çakışmayı önlemek için UUID önekli benzersiz ad
 
     @Column(nullable = false)
-    private String fileUrl; // CMS'in görseli arayüzde göstermek için kullanacağı URL
+    private String fileUrl; // Decap CMS'in görseli arayüzde göstermek için kullanacağı URL
 
     private String fileType;
 
