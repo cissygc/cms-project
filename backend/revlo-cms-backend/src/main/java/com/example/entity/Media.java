@@ -14,10 +14,12 @@ public class Media {
     private Long id;
 
     @Column(nullable = false)
-    private String fileName;
+    private String fileName; // Kullanıcıya gösterilen orijinal dosya adı
+
+    private String storedFileName;
 
     @Column(nullable = false)
-    private String fileUrl; // Decap CMS'in görseli arayüzde göstermek için kullanacağı URL
+    private String fileUrl; // CMS'in görseli arayüzde göstermek için kullanacağı URL
 
     private String fileType;
 

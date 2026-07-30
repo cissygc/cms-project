@@ -48,12 +48,16 @@ public class MediaServiceImpl implements IMediaService {
 
         MultipartFile file = mediaRequestDto.getFile();
 
-        // Dosya adını olduğu gibi kullanıyoruz. NOT: Decap CMS, resim alanının değerini
-        // (public_folder + seçilen dosyanın adı) şeklinde KENDİ İÇİNDE oluşturuyor —
-        // yani sunucudaki gerçek dosya adı ile bu bileşik yol MUTLAKA aynı olmalı.
-        // Önceden UUID öneki eklediğimiz için post içindeki görsel her zaman "bulunamadı"
-        // hatası veriyordu. Aynı isimli dosya tekrar yüklenirse üzerine yazılır.
-        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+        // Kullanıcıya gösterilecek orijinal dosya adı (değişmeden saklanır, sadece görüntüleme amaçlı)
+        String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+
+        // Diskte fiziksel olarak duracak, ÇAKIŞMAYA KARŞI benzersiz ad.
+        // NOT: Daha önce dosya adı hiç değiştirilmeden kaydediliyordu ve aynı isimli
+        // dosya tekrar yüklendiğinde (örn. iki farklı editörün telefonundan gelen
+        // "IMG_0001.jpg") REPLACE_EXISTING nedeniyle birbirinin dosyasının üzerine
+        // yazılıyordu. Şimdi her yüklemeye UUID öneki ekliyoruz, böylece aynı isimli
+        // dosyalar asla çakışmıyor; orijinal isim ayrı bir alanda (fileName) duruyor.
+        String storedFileName = java.util.UUID.randomUUID() + "_" + originalFileName;
 
         try {
             // Uploads klasörü yoksa oluştur
@@ -62,22 +66,24 @@ public class MediaServiceImpl implements IMediaService {
                 Files.createDirectories(uploadPath);
             }
 
-            // Dosyayı diske kaydet
-            Path filePath = uploadPath.resolve(fileName);
+            // Dosyayı diske kaydet (artık üzerine yazma riski yok, ama REPLACE_EXISTING
+            // yine de bırakılıyor çünkü storedFileName pratikte zaten benzersiz)
+            Path filePath = uploadPath.resolve(storedFileName);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             // Veritabanı kaydını oluştur
             Media media = new Media();
-            media.setFileName(fileName);
+            media.setFileName(originalFileName);
+            media.setStoredFileName(storedFileName);
             // Frontend'in görseli çekebilmesi için yönlendirme URL'i.
-            // ÖNEMLİ: fileName; boşluk, '#', '%' gibi karakterler içerebilir
+            // ÖNEMLİ: storedFileName; boşluk, '#', '%' gibi karakterler içerebilir
             // (örn. "#reeonn #domundi.jpeg"). Bunlar URL-encode edilmeden
             // <img src> içinde kullanılırsa tarayıcı '#' sonrasını "fragment"
             // sayıp görseli hiç isteyemez (kırık görsel ikonu). Bu yüzden
             // sadece dosya adını URL-encode ediyoruz, diskteki gerçek dosya
-            // adı (media.getFileName()) her zaman ORİJİNAL/encode edilmemiş
+            // adı (media.getStoredFileName()) her zaman ORİJİNAL/encode edilmemiş
             // haliyle kalıyor.
-            media.setFileUrl("/uploads/" + encodeUrlSegment(fileName));
+            media.setFileUrl("/uploads/" + encodeUrlSegment(storedFileName));
             media.setFileType(file.getContentType());
             media.setFileSize(file.getSize());
             media.setUser(user);
@@ -92,7 +98,7 @@ public class MediaServiceImpl implements IMediaService {
             );
 
         } catch (IOException ex) {
-            throw new RuntimeException("Dosya kaydedilirken bir hata oluştu: " + fileName, ex);
+            throw new RuntimeException("Dosya kaydedilirken bir hata oluştu: " + originalFileName, ex);
         }
     }
 
@@ -119,10 +125,12 @@ public class MediaServiceImpl implements IMediaService {
                 .map(media -> new MediaResponseDto(
                         String.valueOf(media.getId()),
                         media.getFileName(),
-                        // Eski (bu düzeltmeden önce) yüklenmiş kayıtların fileUrl'i encode
-                        // edilmemiş olabilir. Bu yüzden URL'i her zaman media.getFileName()'den
-                        // TAZE olarak (encode ederek) kuruyoruz; stored fileUrl'e güvenmiyoruz.
-                        toAbsoluteUrl("/uploads/" + encodeUrlSegment(media.getFileName())),
+                        // URL'i her zaman media.getStoredFileName()'den TAZE olarak (encode
+                        // ederek) kuruyoruz; stored fileUrl'e güvenmiyoruz. NOT: storedFileName
+                        // eklenmeden önce kaydedilmiş eski medya kayıtlarında bu alan boş
+                        // olabilir - bu durumda geriye dönük uyumluluk için fileName'e düşüyoruz.
+                        toAbsoluteUrl("/uploads/" + encodeUrlSegment(
+                                media.getStoredFileName() != null ? media.getStoredFileName() : media.getFileName())),
                         media.getFileSize()
                 ))
                 .collect(Collectors.toList());
@@ -151,8 +159,10 @@ public class MediaServiceImpl implements IMediaService {
         }
 
         try {
-            // Dosyayı diskten fiziksel olarak sil
-            Path filePath = Paths.get(uploadDir).resolve(media.getFileName());
+            // Dosyayı diskten fiziksel olarak sil - storedFileName eklenmeden önceki
+            // kayıtlarda bu alan boş olabileceği için fileName'e düşüyoruz.
+            String diskFileName = media.getStoredFileName() != null ? media.getStoredFileName() : media.getFileName();
+            Path filePath = Paths.get(uploadDir).resolve(diskFileName);
             Files.deleteIfExists(filePath);
 
             // Veritabanından sil
