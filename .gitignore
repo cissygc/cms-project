@@ -1,0 +1,28 @@
+# =========================
+# Angular
+# =========================
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# =========================
+# Spring Boot / Maven
+# =========================
+backend/**/target/
+
+# =========================
+# Uploaded files
+# =========================
+backend/revlo-cms-backend/uploads/
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Operating System
+# =========================
+.DS_Store
+Thumbs.db

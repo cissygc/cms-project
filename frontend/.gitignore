@@ -1,0 +1,11 @@
+# Node & Angular build artifacts
+node_modules/
+.angular/
+dist/
+tmp/
+out-tsc/
+
+# IDE & OS
+.vscode/
+.DS_Store
+Thumbs.db
