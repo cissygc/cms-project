@@ -3,6 +3,7 @@ package com.example.service.impl;
 import com.example.dto.PostRequestDto;
 import com.example.dto.PostResponseDto;
 import com.example.entity.Post;
+import com.example.entity.PostStatus;
 import com.example.entity.User;
 import com.example.exception.BaseException;
 import com.example.exception.ErrorMessage;
@@ -41,9 +42,26 @@ public class PostServiceImpl implements IPostService {
         post.setContent(postRequestDto.getContent());
         post.setImage(postRequestDto.getImage());
         post.setAuthor(author);
+        // Yeni yazılar için varsayılan DRAFT - editör bilerek yayınlamadıkça
+        // yazı public API'de görünmesin.
+        post.setStatus(parseStatus(postRequestDto.getStatus(), PostStatus.DRAFT));
 
         Post savedPost = postRepository.save(post);
         return mapToDto(savedPost);
+    }
+
+    // İstekten gelen status metnini güvenli şekilde enum'a çevirir; boş/geçersizse
+    // verilen varsayılana düşer (yazı oluşturma sırasında hata fırlatıp editörü
+    // takılı bırakmamak için).
+    private PostStatus parseStatus(String rawStatus, PostStatus fallback) {
+        if (rawStatus == null || rawStatus.isBlank()) {
+            return fallback;
+        }
+        try {
+            return PostStatus.valueOf(rawStatus.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return fallback;
+        }
     }
 
     @Override
@@ -65,6 +83,7 @@ public class PostServiceImpl implements IPostService {
         post.setTitle(postRequestDto.getTitle());
         post.setContent(postRequestDto.getContent());
         post.setImage(postRequestDto.getImage());
+        post.setStatus(parseStatus(postRequestDto.getStatus(), post.getStatus()));
 
         Post updatedPost = postRepository.save(post);
         return mapToDto(updatedPost);
@@ -109,7 +128,9 @@ public class PostServiceImpl implements IPostService {
 
     @Override
     public List<PostResponseDto> getAllPublicPosts() {
+        // Sadece yayınlanmış yazılar public API'de görünür - draft'lar burada listelenmez.
         return postRepository.findAll().stream()
+                .filter(post -> post.getStatus() == PostStatus.PUBLISHED)
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -118,6 +139,12 @@ public class PostServiceImpl implements IPostService {
     public PostResponseDto getPublicPostBySlug(String slug) {
         Post post = postRepository.findBySlug(slug)
                 .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Yazı bulunamadı")));
+
+        // Draft bir yazının linkini bilen biri direkt slug ile de erişemesin.
+        if (post.getStatus() != PostStatus.PUBLISHED) {
+            throw new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Yazı bulunamadı"));
+        }
+
         return mapToDto(post);
     }
 
@@ -129,6 +156,7 @@ public class PostServiceImpl implements IPostService {
                 post.getTitle(),
                 post.getImage(),
                 post.getContent(),
+                post.getStatus().name(),
                 post.getAuthor().getUsername(), // Yazarın sadece adını dönüyoruz
                 post.getCreatedAt(),
                 post.getUpdatedAt()

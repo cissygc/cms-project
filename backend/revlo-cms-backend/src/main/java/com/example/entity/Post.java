@@ -25,6 +25,12 @@ public class Post {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    // Onay akışı yok, editör kendi yazısını direkt yayınlayabilir.
+    // Varsayılan DRAFT - editör bilerek yayınlamadıkça yazı public API'de görünmez.
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PostStatus status = PostStatus.DRAFT;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User author;
