@@ -61,6 +61,13 @@ public class SecurityConfig {
                                 .requestMatchers("/api/public/**").permitAll()
                                 .requestMatchers("/api/entries/**").authenticated()
                                 .requestMatchers("/api/media/**").authenticated()
+                                // Koleksiyonlar: listeleme her giriş yapmış kullanıcıya açık,
+                                // oluşturma/silme service katmanında ADMIN'e kısıtlı.
+                                .requestMatchers("/api/collections/**").authenticated()
+                                // Kendi profilini görme/düzenleme - ADMIN/EDITOR fark etmeksizin
+                                // herkes kendi hesabına erişebilsin. NOT: bu satır aşağıdaki
+                                // genel "/api/users/**" ADMIN kısıtlamasından ÖNCE gelmeli,
+                                // Spring Security ilk eşleşen matcher'ı kullanır.
                                 .requestMatchers("/api/users/me").authenticated()
                                 // Kullanıcı yönetimi (listeleme + silme) sadece ADMIN'e açık
                                 .requestMatchers("/api/users/**").hasAuthority("ADMIN")
