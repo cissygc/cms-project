@@ -1,5 +1,6 @@
 package com.example.dto.post;
 
+import com.example.dto.postMedia.PostMediaRequestDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -31,4 +32,9 @@ public class PostRequestDto {
 
     // Opsiyonel - yazının atandığı koleksiyon id'leri
     private java.util.List<Long> collectionIds;
+
+    // Opsiyonel - kapak görseli HARİÇ, içerik içinde gösterilecek sıralı görseller.
+    // Listedeki sıra = gösterim sırası. Gönderilmezse (null) mevcut liste korunur
+    // (bkz. PostServiceImpl.updatePost); boş [] gönderilirse tüm görseller kaldırılır.
+    private java.util.List<PostMediaRequestDto> media;
 }

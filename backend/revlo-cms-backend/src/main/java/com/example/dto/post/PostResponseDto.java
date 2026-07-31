@@ -1,5 +1,6 @@
 package com.example.dto.post;
 
+import com.example.dto.postMedia.PostMediaResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -16,6 +17,7 @@ public class PostResponseDto {
     private String status;
     private String language;
     private java.util.List<com.example.dto.collection.CollectionSummaryDto> collections;
+    private java.util.List<PostMediaResponseDto> media;
     private String authorName;
     private String authorFullName;
     private String authorAvatarUrl;
