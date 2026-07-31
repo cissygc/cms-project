@@ -10,6 +10,10 @@ import lombok.NoArgsConstructor;
 public class UserResponseDto {
     private Long id;
     private String username;
+    private String fullName;
+    private String bio;
+    private String avatarUrl;
+    private String slug;
     private String role;
     private long postCount;
 }

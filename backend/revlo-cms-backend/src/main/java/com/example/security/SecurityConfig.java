@@ -61,6 +61,7 @@ public class SecurityConfig {
                                 .requestMatchers("/api/public/**").permitAll()
                                 .requestMatchers("/api/entries/**").authenticated()
                                 .requestMatchers("/api/media/**").authenticated()
+                                .requestMatchers("/api/users/me").authenticated()
                                 // Kullanıcı yönetimi (listeleme + silme) sadece ADMIN'e açık
                                 .requestMatchers("/api/users/**").hasAuthority("ADMIN")
                                 .requestMatchers("/api/dashboard/**").authenticated()

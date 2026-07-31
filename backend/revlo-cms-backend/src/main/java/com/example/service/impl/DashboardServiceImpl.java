@@ -64,6 +64,9 @@ public class DashboardServiceImpl implements IDashboardService {
                 post.getContent(),
                 post.getStatus().name(),
                 post.getAuthor().getUsername(),
+                post.getAuthor().getFullName(),
+                post.getAuthor().getAvatarUrl(),
+                post.getAuthor().getSlug(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
