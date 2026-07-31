@@ -16,7 +16,4 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // Kullanıcı silme kontrolü için: bu kullanıcının kaç yazısı var
     long countByAuthor_Id(Long userId);
-
-    // Collection silme kontrolü ve listede postCount göstermek için
-    long countByCollections_Id(Long collectionId);
 }

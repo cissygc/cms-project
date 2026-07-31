@@ -97,39 +97,9 @@ public class AuthServiceImpl implements IAuthService {
 
         user.setRole(userRole);
 
-        // 4. Profil alanları
-        user.setFullName(registerRequestDto.getFullName());
-        user.setBio(registerRequestDto.getBio());
-        user.setAvatarUrl(registerRequestDto.getAvatarUrl());
-        user.setSlug(resolveSlug(registerRequestDto.getSlug(), registerRequestDto.getUsername()));
-
-        // 5. Kullanıcıyı veritabanına kaydetme
+        // 4. Kullanıcıyı veritabanına kaydetme
         userRepository.save(user);
 
         return new RegisterResponseDto("Kullanıcı başarıyla oluşturuldu.");
-    }
-
-    // Admin slug göndermediyse kullanıcı adından otomatik üretir; eğer o slug
-    // zaten alınmışsa "-2", "-3" ... ekleyerek benzersiz hale getirir.
-    // Admin slug'ı KENDİSİ girdiyse (registerRequestDto.getSlug() doluysa) sadece
-    // çakışma kontrolü yapılır, otomatik üretime gidilmez.
-    private String resolveSlug(String requestedSlug, String username) {
-        if (requestedSlug != null && !requestedSlug.isBlank()) {
-            if (userRepository.existsBySlug(requestedSlug)) {
-                throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Bu slug zaten kullanımda"));
-            }
-            return requestedSlug;
-        }
-
-        String baseSlug = username.toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-+|-+$", "");
-        String candidate = baseSlug;
-        int suffix = 2;
-        while (userRepository.existsBySlug(candidate)) {
-            candidate = baseSlug + "-" + suffix;
-            suffix++;
-        }
-        return candidate;
     }
 }
