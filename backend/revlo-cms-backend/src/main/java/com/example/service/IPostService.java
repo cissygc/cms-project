@@ -1,7 +1,7 @@
 package com.example.service;
 
-import com.example.dto.PostRequestDto;
-import com.example.dto.PostResponseDto;
+import com.example.dto.post.PostRequestDto;
+import com.example.dto.post.PostResponseDto;
 
 import java.util.List;
 
@@ -15,6 +15,7 @@ public interface IPostService {
     // Bunlar CMS paneli için DEĞİL - CMS'i kullanacak kişinin kendi
     // sitesinin (frontend) postları göstermek için çağıracağı, giriş
     // gerektirmeyen herkese açık metodlar.
-    List<PostResponseDto> getAllPublicPosts();
+    // language / collectionSlug null bırakılırsa o kritere göre filtre uygulanmaz.
+    List<PostResponseDto> getAllPublicPosts(String language, String collectionSlug);
     PostResponseDto getPublicPostBySlug(String slug);
 }

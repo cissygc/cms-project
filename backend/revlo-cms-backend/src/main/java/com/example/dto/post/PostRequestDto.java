@@ -1,4 +1,4 @@
-package com.example.dto;
+package com.example.dto.post;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -25,4 +25,10 @@ public class PostRequestDto {
 
     // Opsiyonel - gönderilmezse yeni yazılarda DRAFT varsayılır (bkz. PostServiceImpl)
     private String status;
+
+    // Opsiyonel - gönderilmezse TR varsayılır (bkz. PostServiceImpl.parseLanguage)
+    private String language;
+
+    // Opsiyonel - yazının atandığı koleksiyon id'leri
+    private java.util.List<Long> collectionIds;
 }

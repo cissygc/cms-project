@@ -1,7 +1,7 @@
 package com.example.controller.impl;
 
 import com.example.controller.IPublicPostController;
-import com.example.dto.PostResponseDto;
+import com.example.dto.post.PostResponseDto;
 import com.example.service.IPostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,8 +18,8 @@ public class PublicPostControllerImpl implements IPublicPostController {
     }
 
     @Override
-    public ResponseEntity<?> getAllPublicPosts() {
-        List<PostResponseDto> posts = postService.getAllPublicPosts();
+    public ResponseEntity<?> getAllPublicPosts(String language, String collection) {
+        List<PostResponseDto> posts = postService.getAllPublicPosts(language, collection);
         return ResponseEntity.ok(posts);
     }
 
