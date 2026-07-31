@@ -158,6 +158,9 @@ public class PostServiceImpl implements IPostService {
                 post.getContent(),
                 post.getStatus().name(),
                 post.getAuthor().getUsername(), // Yazarın sadece adını dönüyoruz
+                post.getAuthor().getFullName(),
+                post.getAuthor().getAvatarUrl(),
+                post.getAuthor().getSlug(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );

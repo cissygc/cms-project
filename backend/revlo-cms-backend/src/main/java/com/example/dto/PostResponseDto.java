@@ -15,6 +15,9 @@ public class PostResponseDto {
     private String content;
     private String status;
     private String authorName;
+    private String authorFullName;
+    private String authorAvatarUrl;
+    private String authorSlug;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
