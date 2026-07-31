@@ -17,19 +17,6 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    // ----- Editör profili alanları -----
-    private String fullName;
-
-    @Column(columnDefinition = "TEXT")
-    private String bio;
-
-    private String avatarUrl;
-
-    // Public sitede yazarın "yazar sayfası" linki için (örn. /yazar/ceren-gurcan).
-    // Boş bırakılabilir; kullanıcı profilini ilk kez düzenlerken belirler.
-    @Column(unique = true)
-    private String slug;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;

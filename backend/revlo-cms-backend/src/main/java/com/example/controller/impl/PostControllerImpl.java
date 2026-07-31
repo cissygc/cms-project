@@ -1,8 +1,8 @@
 package com.example.controller.impl;
 
 import com.example.controller.IPostController;
-import com.example.dto.post.PostRequestDto;
-import com.example.dto.post.PostResponseDto;
+import com.example.dto.PostRequestDto;
+import com.example.dto.PostResponseDto;
 import com.example.service.IPostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
