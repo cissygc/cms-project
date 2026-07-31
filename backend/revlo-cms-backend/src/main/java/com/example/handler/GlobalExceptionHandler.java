@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -69,6 +70,12 @@ public class GlobalExceptionHandler {
                 .orElse(MessageType.VALIDATION_ERROR.getMessage());
 
         return ResponseEntity.badRequest().body(createApiError(errorMessage, request));
+    }
+
+    @ExceptionHandler(value = {MaxUploadSizeExceededException.class})
+    public ResponseEntity<ApiError<String>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException exception, WebRequest request) {
+        // Öncesinde bu hata genel handler'a düşüp kullanıcıya belirsiz bir 500 dönüyordu.
+        return ResponseEntity.badRequest().body(createApiError("Dosya boyutu izin verilen en fazla boyutu (10 MB) geçiyor", request));
     }
 
     @ExceptionHandler(value = {Exception.class})
