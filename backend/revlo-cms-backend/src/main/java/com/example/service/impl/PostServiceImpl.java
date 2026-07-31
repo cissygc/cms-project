@@ -1,22 +1,29 @@
 package com.example.service.impl;
 
+import com.example.dto.postMedia.PostMediaRequestDto;
+import com.example.dto.postMedia.PostMediaResponseDto;
 import com.example.dto.post.PostRequestDto;
 import com.example.dto.post.PostResponseDto;
 import com.example.dto.collection.CollectionSummaryDto;
 import com.example.entity.Collection;
 import com.example.entity.Language;
+import com.example.entity.Media;
 import com.example.entity.Post;
+import com.example.entity.PostMedia;
 import com.example.entity.PostStatus;
 import com.example.entity.User;
 import com.example.exception.BaseException;
 import com.example.exception.ErrorMessage;
 import com.example.exception.MessageType;
 import com.example.repository.CollectionRepository;
+import com.example.repository.MediaRepository;
 import com.example.repository.PostRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IPostService;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,11 +35,14 @@ public class PostServiceImpl implements IPostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CollectionRepository collectionRepository;
+    private final MediaRepository mediaRepository;
 
-    public PostServiceImpl(PostRepository postRepository, UserRepository userRepository, CollectionRepository collectionRepository) {
+    public PostServiceImpl(PostRepository postRepository, UserRepository userRepository,
+                           CollectionRepository collectionRepository, MediaRepository mediaRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.collectionRepository = collectionRepository;
+        this.mediaRepository = mediaRepository;
     }
 
     @Override
@@ -55,6 +65,7 @@ public class PostServiceImpl implements IPostService {
         post.setStatus(parseStatus(postRequestDto.getStatus(), PostStatus.DRAFT));
         post.setLanguage(parseLanguage(postRequestDto.getLanguage(), Language.TR));
         post.setCollections(resolveCollections(postRequestDto.getCollectionIds()));
+        post.setMedia(resolveMedia(post, postRequestDto.getMedia()));
 
         Post savedPost = postRepository.save(post);
         return mapToDto(savedPost);
@@ -86,6 +97,33 @@ public class PostServiceImpl implements IPostService {
             throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Belirtilen koleksiyonlardan biri veya birkaçı bulunamadı"));
         }
         return new HashSet<>(found);
+    }
+
+    // Verilen sıralı medya referans listesinden PostMedia listesi kurar.
+    // - null -> boş liste döner (createPost'ta "hiç görsel yok" anlamına gelir)
+    // - Listedeki HERHANGİ bir mediaId veritabanında yoksa hata fırlatır
+    //   (post'un sessizce eksik/kırık görselle kaydedilmesini önlemek için)
+    // - sortOrder, listedeki SIRAYA göre otomatik atanır (0, 1, 2, ...)
+    private List<PostMedia> resolveMedia(Post post, List<PostMediaRequestDto> mediaItems) {
+        if (mediaItems == null || mediaItems.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<PostMedia> result = new ArrayList<>();
+        int order = 0;
+        for (PostMediaRequestDto item : mediaItems) {
+            Media media = mediaRepository.findById(item.getMediaId())
+                    .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST,
+                            "Medya bulunamadı (id: " + item.getMediaId() + ")")));
+
+            PostMedia postMedia = new PostMedia();
+            postMedia.setPost(post);
+            postMedia.setMedia(media);
+            postMedia.setCaption(item.getCaption());
+            postMedia.setSortOrder(order++);
+            result.add(postMedia);
+        }
+        return result;
     }
 
     // İstekten gelen status metnini güvenli şekilde enum'a çevirir; boş/geçersizse
@@ -127,6 +165,11 @@ public class PostServiceImpl implements IPostService {
         // boş liste [] gönderilirse post bilerek tüm koleksiyonlardan çıkarılmış olur.
         if (postRequestDto.getCollectionIds() != null) {
             post.setCollections(resolveCollections(postRequestDto.getCollectionIds()));
+        }
+        // Aynı null-vs-boş-liste mantığı: media hiç gönderilmezse mevcut görseller
+        // korunur, boş [] gönderilirse post bilerek tüm içerik görsellerinden çıkarılır.
+        if (postRequestDto.getMedia() != null) {
+            post.setMedia(resolveMedia(post, postRequestDto.getMedia()));
         }
 
         Post updatedPost = postRepository.save(post);
@@ -213,6 +256,16 @@ public class PostServiceImpl implements IPostService {
                 .map(c -> new CollectionSummaryDto(c.getId(), c.getName(), c.getSlug()))
                 .collect(Collectors.toList());
 
+        // post.getMedia() zaten @OrderBy("sortOrder ASC") ile sıralı geliyor
+        List<PostMediaResponseDto> mediaDtos = post.getMedia().stream()
+                .map(pm -> new PostMediaResponseDto(
+                        pm.getMedia().getId(),
+                        toAbsoluteUrl(pm.getMedia().getFileUrl()),
+                        pm.getCaption(),
+                        pm.getSortOrder()
+                ))
+                .collect(Collectors.toList());
+
         return new PostResponseDto(
                 post.getId(),
                 post.getSlug(),
@@ -222,6 +275,7 @@ public class PostServiceImpl implements IPostService {
                 post.getStatus().name(),
                 post.getLanguage().name(),
                 collectionDtos,
+                mediaDtos,
                 post.getAuthor().getUsername(), // Yazarın sadece adını dönüyoruz
                 post.getAuthor().getFullName(),
                 post.getAuthor().getAvatarUrl(),
@@ -229,5 +283,15 @@ public class PostServiceImpl implements IPostService {
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
+    }
+
+    // MediaServiceImpl'deki toAbsoluteUrl ile aynı mantık - göreli path'i
+    // isteğin geldiği domain ile mutlak URL'e çevirir.
+    private String toAbsoluteUrl(String fileUrl) {
+        if (fileUrl == null || fileUrl.startsWith("http")) {
+            return fileUrl;
+        }
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        return baseUrl + fileUrl;
     }
 }

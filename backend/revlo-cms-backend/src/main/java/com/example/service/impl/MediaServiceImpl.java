@@ -8,6 +8,7 @@ import com.example.exception.BaseException;
 import com.example.exception.ErrorMessage;
 import com.example.exception.MessageType;
 import com.example.repository.MediaRepository;
+import com.example.repository.PostMediaRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IMediaService;
 import jakarta.transaction.Transactional;
@@ -32,13 +33,15 @@ public class MediaServiceImpl implements IMediaService {
 
     private final MediaRepository mediaRepository;
     private final UserRepository userRepository;
+    private final PostMediaRepository postMediaRepository;
 
     // Dosyaların fiziksel olarak kaydedileceği klasör
     private final String uploadDir = "uploads/";
 
-    public MediaServiceImpl(MediaRepository mediaRepository, UserRepository userRepository) {
+    public MediaServiceImpl(MediaRepository mediaRepository, UserRepository userRepository, PostMediaRepository postMediaRepository) {
         this.mediaRepository = mediaRepository;
         this.userRepository = userRepository;
+        this.postMediaRepository = postMediaRepository;
     }
 
     // İzin verilen görsel MIME tipleri - şu an sadece kapak/post görselleri yükleniyor,
@@ -177,6 +180,15 @@ public class MediaServiceImpl implements IMediaService {
         // Silmeye çalışan kişi, medyayı yükleyen kişi mi kontrolü
         if (!media.getUser().getUsername().equals(username)) {
             throw new BaseException(new ErrorMessage(MessageType.UNAUTHORIZED_ACCESS, "Bu dosyayı silme yetkiniz yok"));
+        }
+
+        // Bir post'un içeriğinde kullanılan görsel sessizce silinip kırık link
+        // bırakmasın diye engelleniyor. NOT: kapak görseli (Post.image) düz bir
+        // URL string olduğu için buradan takip edilemiyor - bu kontrol sadece
+        // post içeriğine (PostMedia) eklenmiş görseller için geçerli.
+        if (postMediaRepository.existsByMedia_Id(id)) {
+            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
+                    "Bu görsel bir veya daha fazla yazının içeriğinde kullanılıyor. Önce yazı(lar)dan kaldırın"));
         }
 
         try {
