@@ -7,7 +7,6 @@ import com.example.entity.User;
 import com.example.exception.BaseException;
 import com.example.exception.ErrorMessage;
 import com.example.exception.MessageType;
-import com.example.repository.MediaRepository;
 import com.example.repository.PostRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IUserService;
@@ -21,17 +20,16 @@ public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
     private final PostRepository postRepository;
-    private final MediaRepository mediaRepository;
 
-    public UserServiceImpl(UserRepository userRepository, PostRepository postRepository, MediaRepository mediaRepository) {
+    public UserServiceImpl(UserRepository userRepository, PostRepository postRepository) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
-        this.mediaRepository = mediaRepository;
     }
 
     @Override
-    public List<UserResponseDto> getAllUsers() {
+    public List<UserResponseDto> getAllUsers(boolean includeDeleted) {
         return userRepository.findAll().stream()
+                .filter(user -> includeDeleted || !user.isDeleted())
                 .map(user -> toDto(user, postRepository.countByAuthor_Id(user.getId())))
                 .collect(Collectors.toList());
     }
@@ -77,6 +75,7 @@ public class UserServiceImpl implements IUserService {
                 user.getAvatarUrl(),
                 user.getSlug(),
                 user.getRole().name(),
+                user.isDeleted(),
                 postCount
         );
     }
@@ -91,30 +90,25 @@ public class UserServiceImpl implements IUserService {
             throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Kendi hesabınızı silemezsiniz"));
         }
 
-        // Sistemdeki son ADMIN'in silinmesini engelle
+        if (user.isDeleted()) {
+            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Bu kullanıcı zaten silinmiş"));
+        }
+
+        // Sistemdeki son (silinmemiş) ADMIN'in silinmesini engelle
         if (user.getRole() == Role.ADMIN) {
-            long adminCount = userRepository.findAll().stream()
-                    .filter(u -> u.getRole() == Role.ADMIN)
+            long activeAdminCount = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == Role.ADMIN && !u.isDeleted())
                     .count();
-            if (adminCount <= 1) {
+            if (activeAdminCount <= 1) {
                 throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Sistemdeki son ADMIN kullanıcı silinemez"));
             }
         }
 
-        // Kullanıcının yazıları varsa engelle (yazı silmeden/yazar değiştirmeden kullanıcı silinemez)
-        long postCount = postRepository.countByAuthor_Id(user.getId());
-        if (postCount > 0) {
-            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
-                    "Bu kullanıcının " + postCount + " adet yazısı var. Önce bu yazıları silin veya başka bir yazara aktarın"));
-        }
-
-        // Kullanıcının yüklediği medya varsa engelle
-        long mediaCount = mediaRepository.countByUserId(user.getId());
-        if (mediaCount > 0) {
-            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
-                    "Bu kullanıcının " + mediaCount + " adet yüklediği medya var. Önce bunları silin"));
-        }
-
-        userRepository.delete(user);
+        // Soft delete: hesap kalıcı olarak silinmiyor, sadece pasifleştiriliyor.
+        // Yazıları/medyaları olduğu için engelleme YOK artık - içerik kalıcı olarak
+        // yaşamaya devam ediyor, sadece hesap girişi kapanıyor. Bkz. User.deleted
+        // alanındaki yorum ve UserDetailsServiceImpl (login engeli burada uygulanıyor).
+        user.setDeleted(true);
+        userRepository.save(user);
     }
 }

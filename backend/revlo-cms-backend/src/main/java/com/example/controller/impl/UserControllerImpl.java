@@ -21,8 +21,8 @@ public class UserControllerImpl implements IUserController {
     }
 
     @Override
-    public ResponseEntity<?> getAllUsers() {
-        List<UserResponseDto> users = userService.getAllUsers();
+    public ResponseEntity<?> getAllUsers(boolean includeDeleted) {
+        List<UserResponseDto> users = userService.getAllUsers(includeDeleted);
         return ResponseEntity.ok(users);
     }
 

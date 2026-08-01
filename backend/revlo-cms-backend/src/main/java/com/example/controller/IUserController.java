@@ -14,9 +14,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/users")
 public interface IUserController {
 
-    // Tüm kullanıcıları (şifre hariç) listeler - Kullanıcı Yönetimi ekranı için
+    // Varsayılan olarak silinmiş kullanıcılar listede görünmez.
+    // ?includeDeleted=true ile admin panelinde "silinmişleri göster" filtresi açıldığında kullanılır.
     @GetMapping
-    ResponseEntity<?> getAllUsers();
+    ResponseEntity<?> getAllUsers(@RequestParam(required = false, defaultValue = "false") boolean includeDeleted);
 
     // Bir kullanıcıyı siler
     @DeleteMapping("/{id}")

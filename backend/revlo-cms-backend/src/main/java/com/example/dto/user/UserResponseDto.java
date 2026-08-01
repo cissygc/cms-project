@@ -15,5 +15,6 @@ public class UserResponseDto {
     private String avatarUrl;
     private String slug;
     private String role;
+    private boolean deleted;
     private long postCount;
 }
