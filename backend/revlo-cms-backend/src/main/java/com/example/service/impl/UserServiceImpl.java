@@ -10,6 +10,7 @@ import com.example.exception.MessageType;
 import com.example.repository.PostRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IUserService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,10 +21,12 @@ public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
     private final PostRepository postRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, PostRepository postRepository) {
+    public UserServiceImpl(UserRepository userRepository, PostRepository postRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -60,6 +63,27 @@ public class UserServiceImpl implements IUserService {
                 throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Bu slug zaten kullanımda"));
             }
             user.setSlug(dto.getSlug());
+        }
+
+        // Kullanıcı adı değişikliği - NOT: mevcut JWT eski kullanıcı adını taşımaya
+        // devam eder, bu isteğin sonucunda kullanıcı yeniden giriş yapmalı
+        // (frontend bunu kullanıcıya belirtip otomatik logout yapmalı).
+        if (dto.getUsername() != null && !dto.getUsername().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(dto.getUsername())) {
+                throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Bu kullanıcı adı zaten kullanımda"));
+            }
+            user.setUsername(dto.getUsername());
+        }
+
+        // Şifre değişikliği - mevcut şifre doğrulanmadan asla değiştirilmez
+        if (dto.getNewPassword() != null && !dto.getNewPassword().isBlank()) {
+            if (dto.getCurrentPassword() == null || dto.getCurrentPassword().isBlank()) {
+                throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Şifrenizi değiştirmek için mevcut şifrenizi girmelisiniz"));
+            }
+            if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+                throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Mevcut şifreniz hatalı"));
+            }
+            user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         }
 
         User saved = userRepository.save(user);
