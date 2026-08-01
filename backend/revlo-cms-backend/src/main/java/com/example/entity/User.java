@@ -33,4 +33,13 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    // Soft delete - hesap "silindiğinde" gerçekten silinmiyor, sadece işaretleniyor.
+    // Sebep: kullanıcının yazdığı yazılar bağımsız bir değer taşıyor (SEO, okuyucu
+    // deneyimi) - hard delete edilirse ya cascade ile yazılar da gider ya da
+    // karmaşık bir "yazıları devret" akışı gerekir. Silinmiş kullanıcı: giriş
+    // yapamaz, admin listesinde varsayılan gizli; yazıları public API'de
+    // görünmeye DEVAM eder (bilinçli karar - içerik yazardan bağımsız yaşar).
+    @Column(nullable = false)
+    private boolean deleted = false;
 }
