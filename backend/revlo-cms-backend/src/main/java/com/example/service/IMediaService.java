@@ -7,6 +7,6 @@ import java.util.List;
 
 public interface IMediaService {
     MediaResponseDto uploadMedia(MediaRequestDto mediaRequestDto, String username);
-    List<MediaResponseDto> getUserMedia(String username);
-    void deleteMedia(Long id, String username);
+    List<MediaResponseDto> getUserMedia(String username, boolean isAdmin);
+    void deleteMedia(Long id, String username, boolean isAdmin);
 }

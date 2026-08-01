@@ -16,7 +16,7 @@ public interface IMediaController {
     @PostMapping
     ResponseEntity<?> uploadMedia(@Valid @ModelAttribute MediaRequestDto mediaRequestDto, @Parameter(hidden = true) Authentication authentication);
 
-    // Kullanıcının kendi medyalarını listeleme
+    // Medya listesi: ADMIN ise TÜM kullanıcıların medyaları, değilse sadece kendisininki
     @GetMapping
     ResponseEntity<?> getUserMedia(@Parameter(hidden = true) Authentication authentication);
 

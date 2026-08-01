@@ -123,7 +123,9 @@ public class MediaServiceImpl implements IMediaService {
                     String.valueOf(media.getId()),
                     media.getFileName(),
                     toAbsoluteUrl(media.getFileUrl()),
-                    media.getFileSize()
+                    media.getFileSize(),
+                    user.getUsername(),
+                    user.getFullName()
             );
 
         } catch (IOException ex) {
@@ -143,19 +145,23 @@ public class MediaServiceImpl implements IMediaService {
     }
 
     @Override
-    public List<MediaResponseDto> getUserMedia(String username) {
+    public List<MediaResponseDto> getUserMedia(String username, boolean isAdmin) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Kullanıcı bulunamadı")));
 
-        // Sadece giriş yapan kullanıcıya ait görselleri çekiyoruz
-        List<Media> userMedia = mediaRepository.findAllByUserId(user.getId());
+        // ADMIN herkesin medyasını görür, editör sadece kendi yüklediklerini.
+        List<Media> targetMedia = isAdmin
+                ? mediaRepository.findAll()
+                : mediaRepository.findAllByUserId(user.getId());
 
-        return userMedia.stream()
+        return targetMedia.stream()
                 .map(media -> new MediaResponseDto(
                         String.valueOf(media.getId()),
                         media.getFileName(),
                         toAbsoluteUrl("/uploads/" + encodeUrlSegment(media.getStoredFileName())),
-                        media.getFileSize()
+                        media.getFileSize(),
+                        media.getUser().getUsername(),
+                        media.getUser().getFullName()
                 ))
                 .collect(Collectors.toList());
     }
@@ -173,12 +179,12 @@ public class MediaServiceImpl implements IMediaService {
 
     @Transactional
     @Override
-    public void deleteMedia(Long id, String username) {
+    public void deleteMedia(Long id, String username, boolean isAdmin) {
         Media media = mediaRepository.findById(id)
                 .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Medya bulunamadı")));
 
-        // Silmeye çalışan kişi, medyayı yükleyen kişi mi kontrolü
-        if (!media.getUser().getUsername().equals(username)) {
+        // Silmeye çalışan kişi, medyayı yükleyen kişi mi (ya da ADMIN mi) kontrolü
+        if (!isAdmin && !media.getUser().getUsername().equals(username)) {
             throw new BaseException(new ErrorMessage(MessageType.UNAUTHORIZED_ACCESS, "Bu dosyayı silme yetkiniz yok"));
         }
 

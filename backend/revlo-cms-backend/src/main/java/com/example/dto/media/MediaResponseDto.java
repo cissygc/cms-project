@@ -10,4 +10,6 @@ public class MediaResponseDto {
     private String name;
     private String url;
     private Long size;
+    private String uploadedByUsername;
+    private String uploadedByFullName;
 }
