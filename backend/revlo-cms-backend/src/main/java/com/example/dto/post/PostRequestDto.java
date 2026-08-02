@@ -1,6 +1,8 @@
 package com.example.dto.post;
 
 import com.example.dto.postMedia.PostMediaRequestDto;
+import com.example.dto.postSeo.PostSeoRequestDto;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -37,4 +39,8 @@ public class PostRequestDto {
     // Listedeki sıra = gösterim sırası. Gönderilmezse (null) mevcut liste korunur
     // (bkz. PostServiceImpl.updatePost); boş [] gönderilirse tüm görseller kaldırılır.
     private java.util.List<PostMediaRequestDto> media;
+
+    // Opsiyonel - hiç gönderilmezse tüm SEO alanları fallback'e düşer (bkz. PostServiceImpl.resolveSeo)
+    @Valid
+    private PostSeoRequestDto seo;
 }

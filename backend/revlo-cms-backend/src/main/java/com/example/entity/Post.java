@@ -58,6 +58,23 @@ public class Post {
     @OrderBy("sortOrder ASC")
     private List<PostMedia> media = new java.util.ArrayList<>();
 
+    // ----- SEO alanları -----
+    // Hepsi opsiyonel/HAM (girilen) değerler - hiçbiri doldurulmasa bile site
+    // "SEO'suz" kalmaz, çünkü bunların hepsi için bir fallback (varsayılan
+    // üretim) mantığı var. Fallback hesaplaması PostServiceImpl.resolveSeo()
+    // içinde yapılıyor, DB'de sadece editörün BİLEREK girdiği ham değer durur.
+    private String metaTitle;
+
+    @Column(columnDefinition = "TEXT")
+    private String metaDescription;
+
+    private String ogImageUrl;
+
+    private String canonicalUrl;
+
+    @Column(nullable = false)
+    private boolean noIndex = false;
+
     @Column(updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

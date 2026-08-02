@@ -4,6 +4,8 @@ import com.example.dto.postMedia.PostMediaRequestDto;
 import com.example.dto.postMedia.PostMediaResponseDto;
 import com.example.dto.post.PostRequestDto;
 import com.example.dto.post.PostResponseDto;
+import com.example.dto.postSeo.PostSeoRequestDto;
+import com.example.dto.postSeo.PostSeoResponseDto;
 import com.example.dto.collection.CollectionSummaryDto;
 import com.example.entity.Collection;
 import com.example.entity.Language;
@@ -20,6 +22,7 @@ import com.example.repository.MediaRepository;
 import com.example.repository.PostRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IPostService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -36,6 +39,13 @@ public class PostServiceImpl implements IPostService {
     private final UserRepository userRepository;
     private final CollectionRepository collectionRepository;
     private final MediaRepository mediaRepository;
+
+    // application.properties -> site.public-base-url (canonical URL üretimi için, bkz. buildCanonicalUrl)
+    @Value("${site.public-base-url}")
+    private String siteBaseUrl;
+
+    // Ortalama okuma hızı - sektörde yaygın kullanılan varsayım (dakikada kelime, "words per minute")
+    private static final int WORDS_PER_MINUTE = 200;
 
     public PostServiceImpl(PostRepository postRepository, UserRepository userRepository,
                            CollectionRepository collectionRepository, MediaRepository mediaRepository) {
@@ -66,9 +76,25 @@ public class PostServiceImpl implements IPostService {
         post.setLanguage(parseLanguage(postRequestDto.getLanguage(), Language.TR));
         post.setCollections(resolveCollections(postRequestDto.getCollectionIds()));
         post.setMedia(resolveMedia(post, postRequestDto.getMedia()));
+        applySeo(post, postRequestDto.getSeo());
 
         Post savedPost = postRepository.save(post);
         return mapToDto(savedPost);
+    }
+
+    // İstekten gelen SEO alanlarını post'a HAM olarak (fallback uygulamadan) yazar.
+    // dto null gelirse (editör hiç seo objesi göndermediyse) hiçbir şeye dokunmaz -
+    // mevcut değerler korunur (updatePost'ta önemli: SEO göndermeyen bir güncelleme
+    // isteği, daha önce girilmiş SEO verisini silmemeli).
+    private void applySeo(Post post, PostSeoRequestDto seo) {
+        if (seo == null) {
+            return;
+        }
+        post.setMetaTitle(seo.getMetaTitle());
+        post.setMetaDescription(seo.getMetaDescription());
+        post.setOgImageUrl(seo.getOgImageUrl());
+        post.setCanonicalUrl(seo.getCanonicalUrl());
+        post.setNoIndex(seo.isNoIndex());
     }
 
     // İstekten gelen dil metnini güvenli şekilde enum'a çevirir; boş/geçersizse
@@ -171,6 +197,7 @@ public class PostServiceImpl implements IPostService {
         if (postRequestDto.getMedia() != null) {
             post.setMedia(resolveMedia(post, postRequestDto.getMedia()));
         }
+        applySeo(post, postRequestDto.getSeo());
 
         Post updatedPost = postRepository.save(post);
         return mapToDto(updatedPost);
@@ -250,6 +277,73 @@ public class PostServiceImpl implements IPostService {
         return mapToDto(post);
     }
 
+    // ---------- SEO fallback zinciri ----------
+    // Editör bir alanı boş bıraktıysa, o alan için mantıklı bir varsayım üretiyoruz.
+    // Bu sayede hiçbir yazı "SEO'suz" kalmıyor, ama editör istediğinde ince ayar yapabiliyor.
+    private PostSeoResponseDto resolveSeo(Post post) {
+        String metaTitle = hasText(post.getMetaTitle()) ? post.getMetaTitle() : post.getTitle();
+
+        String metaDescription = hasText(post.getMetaDescription())
+                ? post.getMetaDescription()
+                : buildExcerpt(post.getContent(), 155);
+
+        String ogImageUrl = hasText(post.getOgImageUrl()) ? post.getOgImageUrl() : post.getImage();
+
+        String canonicalUrl = hasText(post.getCanonicalUrl())
+                ? post.getCanonicalUrl()
+                : buildCanonicalUrl(post);
+
+        return new PostSeoResponseDto(metaTitle, metaDescription, ogImageUrl, canonicalUrl, post.isNoIndex());
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    // https://revloai.com/tr/blog/<slug> gibi - site.public-base-url + dil + /blog/ + slug.
+    // Dil kodu küçük harfe çevriliyor çünkü URL segmentleri geleneksel olarak küçük harf olur (TR -> tr).
+    private String buildCanonicalUrl(Post post) {
+        return siteBaseUrl + "/" + post.getLanguage().name().toLowerCase() + "/blog/" + post.getSlug();
+    }
+
+    // İçerikten (markdown/html işaretlemesi temizlenmiş) otomatik meta açıklama üretir.
+    // Kelime ortasından kesmemek için son kelimeyi tam bırakıp "..." ekliyoruz.
+    private String buildExcerpt(String content, int maxLength) {
+        if (content == null || content.isBlank()) {
+            return null;
+        }
+
+        // Markdown/HTML işaretlemesini temizle (#, *, _, `, <tag> vb.) - basit ama etkili bir yaklaşım
+        String plainText = content
+                .replaceAll("<[^>]+>", " ")       // HTML tag'leri
+                .replaceAll("[#*_`>]", " ")        // Yaygın markdown işaretleri
+                .replaceAll("\\s+", " ")           // Fazla boşlukları teke indir
+                .trim();
+
+        if (plainText.length() <= maxLength) {
+            return plainText;
+        }
+
+        // maxLength'te kes, sonra son (yarım kalmış) kelimeyi at
+        String truncated = plainText.substring(0, maxLength);
+        int lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 0) {
+            truncated = truncated.substring(0, lastSpace);
+        }
+        return truncated + "...";
+    }
+
+    // Ortalama okuma hızı (200 kelime/dakika) üzerinden tahmini okuma süresi.
+    // En az 1 dakika döner - 0 dakika göstermek garip kaçar (çok kısa yazılarda bile).
+    private int calculateReadingTime(String content) {
+        if (content == null || content.isBlank()) {
+            return 1;
+        }
+        int wordCount = content.trim().split("\\s+").length;
+        int minutes = (int) Math.ceil((double) wordCount / WORDS_PER_MINUTE);
+        return Math.max(minutes, 1);
+    }
+
     // Entity -> DTO Dönüşümünü yapan yardımcı metot (Boilerplate kodu engeller)
     private PostResponseDto mapToDto(Post post) {
         List<CollectionSummaryDto> collectionDtos = post.getCollections().stream()
@@ -276,6 +370,8 @@ public class PostServiceImpl implements IPostService {
                 post.getLanguage().name(),
                 collectionDtos,
                 mediaDtos,
+                resolveSeo(post),
+                calculateReadingTime(post.getContent()),
                 post.getAuthor().getUsername(), // Yazarın sadece adını dönüyoruz
                 post.getAuthor().getFullName(),
                 post.getAuthor().getAvatarUrl(),
