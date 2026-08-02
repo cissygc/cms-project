@@ -40,6 +40,11 @@ public class PostRequestDto {
     // (bkz. PostServiceImpl.updatePost); boş [] gönderilirse tüm görseller kaldırılır.
     private java.util.List<PostMediaRequestDto> media;
 
+    // Opsiyonel - serbest metin etiket isimleri. Var olmayan bir isim otomatik
+    // oluşturulur (bkz. PostServiceImpl.resolveTags). Null = mevcut etiketler
+    // korunur, [] = tüm etiketler kaldırılır (collectionIds ile aynı mantık).
+    private java.util.List<String> tagNames;
+
     // Opsiyonel - hiç gönderilmezse tüm SEO alanları fallback'e düşer (bkz. PostServiceImpl.resolveSeo)
     @Valid
     private PostSeoRequestDto seo;

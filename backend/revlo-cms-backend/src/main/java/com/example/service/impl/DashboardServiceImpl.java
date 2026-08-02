@@ -70,6 +70,7 @@ public class DashboardServiceImpl implements IDashboardService {
                 post.getStatus().name(),
                 post.getLanguage().name(),
                 collectionDtos,
+                java.util.Collections.emptyList(),
                 // Dashboard "son eklenen yazılar" özeti için içerik görselleri
                 // taşınmıyor (hafif tutmak için) - sadece kapak görseli yeterli.
                 java.util.Collections.emptyList(),

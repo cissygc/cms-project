@@ -19,4 +19,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // Collection silme kontrolü ve listede postCount göstermek için
     long countByCollections_Id(Long collectionId);
+
+    // Bir koleksiyon silinirken, o koleksiyona bağlı post'ları bulup
+    // bağlantılarını kaldırmak için (bkz. CollectionServiceImpl.deleteCollection)
+    java.util.List<Post> findAllByCollections_Id(Long collectionId);
+
+    // Aynı mantık tag'ler için (bkz. TagServiceImpl.deleteTag)
+    java.util.List<Post> findAllByTags_Id(Long tagId);
 }

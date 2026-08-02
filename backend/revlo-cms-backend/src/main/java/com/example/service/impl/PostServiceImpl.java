@@ -7,12 +7,14 @@ import com.example.dto.post.PostResponseDto;
 import com.example.dto.postSeo.PostSeoRequestDto;
 import com.example.dto.postSeo.PostSeoResponseDto;
 import com.example.dto.collection.CollectionSummaryDto;
+import com.example.dto.tag.TagSummaryDto;
 import com.example.entity.Collection;
 import com.example.entity.Language;
 import com.example.entity.Media;
 import com.example.entity.Post;
 import com.example.entity.PostMedia;
 import com.example.entity.PostStatus;
+import com.example.entity.Tag;
 import com.example.entity.User;
 import com.example.exception.BaseException;
 import com.example.exception.ErrorMessage;
@@ -20,6 +22,7 @@ import com.example.exception.MessageType;
 import com.example.repository.CollectionRepository;
 import com.example.repository.MediaRepository;
 import com.example.repository.PostRepository;
+import com.example.repository.TagRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IPostService;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +42,7 @@ public class PostServiceImpl implements IPostService {
     private final UserRepository userRepository;
     private final CollectionRepository collectionRepository;
     private final MediaRepository mediaRepository;
+    private final TagRepository tagRepository;
 
     // application.properties -> site.public-base-url (canonical URL üretimi için, bkz. buildCanonicalUrl)
     @Value("${site.public-base-url}")
@@ -48,11 +52,13 @@ public class PostServiceImpl implements IPostService {
     private static final int WORDS_PER_MINUTE = 200;
 
     public PostServiceImpl(PostRepository postRepository, UserRepository userRepository,
-                           CollectionRepository collectionRepository, MediaRepository mediaRepository) {
+                           CollectionRepository collectionRepository, MediaRepository mediaRepository,
+                           TagRepository tagRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.collectionRepository = collectionRepository;
         this.mediaRepository = mediaRepository;
+        this.tagRepository = tagRepository;
     }
 
     @Override
@@ -75,6 +81,7 @@ public class PostServiceImpl implements IPostService {
         post.setStatus(parseStatus(postRequestDto.getStatus(), PostStatus.DRAFT));
         post.setLanguage(parseLanguage(postRequestDto.getLanguage(), Language.TR));
         post.setCollections(resolveCollections(postRequestDto.getCollectionIds()));
+        post.setTags(resolveTags(postRequestDto.getTagNames()));
         post.setMedia(resolveMedia(post, postRequestDto.getMedia()));
         applySeo(post, postRequestDto.getSeo());
 
@@ -123,6 +130,59 @@ public class PostServiceImpl implements IPostService {
             throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Belirtilen koleksiyonlardan biri veya birkaçı bulunamadı"));
         }
         return new HashSet<>(found);
+    }
+
+    // Verilen serbest metin isimlerinden Tag'ler kurar - Collections'daki
+    // resolveCollections'dan FARKI: id değil, İSİM alır ve yoksa OLUŞTURUR
+    // ("find or create"). "AI" ile "ai" aynı tag sayılsın diye case-insensitive
+    // arıyoruz (bkz. TagRepository.findByNameIgnoreCase).
+    private Set<Tag> resolveTags(List<String> tagNames) {
+        if (tagNames == null || tagNames.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        Set<Tag> result = new HashSet<>();
+        for (String rawName : tagNames) {
+            if (rawName == null || rawName.isBlank()) {
+                continue; // boş/whitespace isimleri sessizce atla
+            }
+            String name = rawName.trim();
+
+            Tag tag = tagRepository.findByNameIgnoreCase(name)
+                    .orElseGet(() -> {
+                        Tag newTag = new Tag();
+                        newTag.setName(name);
+                        newTag.setSlug(resolveTagSlug(name));
+                        return tagRepository.save(newTag);
+                    });
+            result.add(tag);
+        }
+        return result;
+    }
+
+    // CollectionServiceImpl.toSlug ile aynı Türkçe karakter dönüşümü - burada da
+    // tekrar ediyoruz çünkü PostServiceImpl'in CollectionServiceImpl'e bağımlı
+    // olmasını istemedik (iki servis birbirinden habersiz kalsın).
+    private String resolveTagSlug(String name) {
+        String transliterated = name
+                .replace('ı', 'i').replace('İ', 'I')
+                .replace('ş', 's').replace('Ş', 'S')
+                .replace('ğ', 'g').replace('Ğ', 'G')
+                .replace('ü', 'u').replace('Ü', 'U')
+                .replace('ö', 'o').replace('Ö', 'O')
+                .replace('ç', 'c').replace('Ç', 'C');
+
+        String baseSlug = transliterated.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
+
+        String candidate = baseSlug;
+        int suffix = 2;
+        while (tagRepository.existsBySlug(candidate)) {
+            candidate = baseSlug + "-" + suffix;
+            suffix++;
+        }
+        return candidate;
     }
 
     // Verilen sıralı medya referans listesinden PostMedia listesi kurar.
@@ -191,6 +251,11 @@ public class PostServiceImpl implements IPostService {
         // boş liste [] gönderilirse post bilerek tüm koleksiyonlardan çıkarılmış olur.
         if (postRequestDto.getCollectionIds() != null) {
             post.setCollections(resolveCollections(postRequestDto.getCollectionIds()));
+        }
+        // Aynı null-vs-boş-liste mantığı: tagNames hiç gönderilmezse mevcut
+        // etiketler korunur, boş [] gönderilirse tüm etiketler kaldırılır.
+        if (postRequestDto.getTagNames() != null) {
+            post.setTags(resolveTags(postRequestDto.getTagNames()));
         }
         // Aynı null-vs-boş-liste mantığı: media hiç gönderilmezse mevcut görseller
         // korunur, boş [] gönderilirse post bilerek tüm içerik görsellerinden çıkarılır.
@@ -350,6 +415,10 @@ public class PostServiceImpl implements IPostService {
                 .map(c -> new CollectionSummaryDto(c.getId(), c.getName(), c.getSlug()))
                 .collect(Collectors.toList());
 
+        List<TagSummaryDto> tagDtos = post.getTags().stream()
+                .map(t -> new TagSummaryDto(t.getId(), t.getName(), t.getSlug()))
+                .collect(Collectors.toList());
+
         // post.getMedia() zaten @OrderBy("sortOrder ASC") ile sıralı geliyor
         List<PostMediaResponseDto> mediaDtos = post.getMedia().stream()
                 .map(pm -> new PostMediaResponseDto(
@@ -369,6 +438,7 @@ public class PostServiceImpl implements IPostService {
                 post.getStatus().name(),
                 post.getLanguage().name(),
                 collectionDtos,
+                tagDtos,
                 mediaDtos,
                 resolveSeo(post),
                 calculateReadingTime(post.getContent()),
