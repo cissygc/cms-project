@@ -64,6 +64,9 @@ public class SecurityConfig {
                                 // Koleksiyonlar: listeleme her giriş yapmış kullanıcıya açık,
                                 // oluşturma/silme service katmanında ADMIN'e kısıtlı.
                                 .requestMatchers("/api/collections/**").authenticated()
+                                // Etiketler: listeleme her giriş yapmış kullanıcıya açık,
+                                // silme service katmanında ADMIN'e kısıtlı.
+                                .requestMatchers("/api/tags/**").authenticated()
                                 // Kendi profilini görme/düzenleme - ADMIN/EDITOR fark etmeksizin
                                 // herkes kendi hesabına erişebilsin. NOT: bu satır aşağıdaki
                                 // genel "/api/users/**" ADMIN kısıtlamasından ÖNCE gelmeli,

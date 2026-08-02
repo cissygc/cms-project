@@ -47,6 +47,16 @@ public class Post {
     )
     private java.util.Set<Collection> collections = new java.util.HashSet<>();
 
+    // Serbest etiketler - Collections'ın aksine editör anında yeni tag oluşturabilir
+    // (bkz. PostServiceImpl.resolveTags).
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "post_tags",
+            joinColumns = @JoinColumn(name = "post_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private java.util.Set<Tag> tags = new java.util.HashSet<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User author;

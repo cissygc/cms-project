@@ -18,6 +18,7 @@ public class PostResponseDto {
     private String status;
     private String language;
     private java.util.List<com.example.dto.collection.CollectionSummaryDto> collections;
+    private java.util.List<com.example.dto.tag.TagSummaryDto> tags;
     private java.util.List<PostMediaResponseDto> media;
     private PostSeoResponseDto seo;
     private int readingTimeMinutes;
