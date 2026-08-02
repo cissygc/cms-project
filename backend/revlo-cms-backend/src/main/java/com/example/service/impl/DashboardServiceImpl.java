@@ -73,6 +73,11 @@ public class DashboardServiceImpl implements IDashboardService {
                 // Dashboard "son eklenen yazılar" özeti için içerik görselleri
                 // taşınmıyor (hafif tutmak için) - sadece kapak görseli yeterli.
                 java.util.Collections.emptyList(),
+                // Dashboard özeti için SEO/okuma süresi hesaplanmıyor (hafif tutmak için,
+                // media listesiyle aynı deliberate simplification) - CMS panelinde ilgili
+                // post açıldığında zaten tam veriyle (PostServiceImpl.mapToDto) gelecek.
+                null,
+                0,
                 post.getAuthor().getUsername(),
                 post.getAuthor().getFullName(),
                 post.getAuthor().getAvatarUrl(),
