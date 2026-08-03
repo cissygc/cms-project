@@ -9,6 +9,7 @@ import com.example.exception.ErrorMessage;
 import com.example.exception.MessageType;
 import com.example.repository.MediaRepository;
 import com.example.repository.PostMediaRepository;
+import com.example.repository.PostRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IMediaService;
 import jakarta.transaction.Transactional;
@@ -34,14 +35,17 @@ public class MediaServiceImpl implements IMediaService {
     private final MediaRepository mediaRepository;
     private final UserRepository userRepository;
     private final PostMediaRepository postMediaRepository;
+    private final PostRepository postRepository;
 
     // Dosyaların fiziksel olarak kaydedileceği klasör
     private final String uploadDir = "uploads/";
 
-    public MediaServiceImpl(MediaRepository mediaRepository, UserRepository userRepository, PostMediaRepository postMediaRepository) {
+    public MediaServiceImpl(MediaRepository mediaRepository, UserRepository userRepository,
+                            PostMediaRepository postMediaRepository, PostRepository postRepository) {
         this.mediaRepository = mediaRepository;
         this.userRepository = userRepository;
         this.postMediaRepository = postMediaRepository;
+        this.postRepository = postRepository;
     }
 
     // İzin verilen görsel MIME tipleri - şu an sadece kapak/post görselleri yükleniyor,
@@ -189,12 +193,22 @@ public class MediaServiceImpl implements IMediaService {
         }
 
         // Bir post'un içeriğinde kullanılan görsel sessizce silinip kırık link
-        // bırakmasın diye engelleniyor. NOT: kapak görseli (Post.image) düz bir
-        // URL string olduğu için buradan takip edilemiyor - bu kontrol sadece
-        // post içeriğine (PostMedia) eklenmiş görseller için geçerli.
+        // bırakmasın diye engelleniyor.
         if (postMediaRepository.existsByMedia_Id(id)) {
             throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
                     "Bu görsel bir veya daha fazla yazının içeriğinde kullanılıyor. Önce yazı(lar)dan kaldırın"));
+        }
+
+        // Kapak görseli ve profil fotoğrafı ARTIK gerçek bir Media ilişkisi olduğu
+        // için (önceden düz string oldukları için bu kontrol yapılamıyordu), bunları da
+        // kontrol ediyoruz.
+        if (postRepository.existsByCoverMedia_Id(id)) {
+            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
+                    "Bu görsel bir veya daha fazla yazının kapak görseli olarak kullanılıyor. Önce kapak görselini değiştirin"));
+        }
+        if (userRepository.existsByAvatarMedia_Id(id)) {
+            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
+                    "Bu görsel bir kullanıcının profil fotoğrafı olarak kullanılıyor. Önce profil fotoğrafını değiştirin"));
         }
 
         try {

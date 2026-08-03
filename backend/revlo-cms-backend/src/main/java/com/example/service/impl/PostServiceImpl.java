@@ -74,7 +74,7 @@ public class PostServiceImpl implements IPostService {
         post.setSlug(postRequestDto.getSlug());
         post.setTitle(postRequestDto.getTitle());
         post.setContent(postRequestDto.getContent());
-        post.setImage(postRequestDto.getImage());
+        post.setCoverMedia(resolveCoverMedia(postRequestDto.getCoverMediaId()));
         post.setAuthor(author);
         // Yeni yazılar için varsayılan DRAFT - editör bilerek yayınlamadıkça
         // yazı public API'de görünmesin.
@@ -84,9 +84,24 @@ public class PostServiceImpl implements IPostService {
         post.setTags(resolveTags(postRequestDto.getTagNames()));
         post.setMedia(resolveMedia(post, postRequestDto.getMedia()));
         applySeo(post, postRequestDto.getSeo());
+        post.setPublishAt(postRequestDto.getPublishAt());
+        if (post.getStatus() == PostStatus.PUBLISHED) {
+            post.setPublishAt(null);
+        }
 
         Post savedPost = postRepository.save(post);
         return mapToDto(savedPost);
+    }
+
+    // coverMediaId verilmemişse (null) kapak görseli yok demektir - bu geçerli bir
+    // durum (post kapaksız kalabilir). Verilmiş ama böyle bir medya yoksa hata fırlatır.
+    private Media resolveCoverMedia(Long coverMediaId) {
+        if (coverMediaId == null) {
+            return null;
+        }
+        return mediaRepository.findById(coverMediaId)
+                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST,
+                        "Kapak görseli bulunamadı (id: " + coverMediaId + ")")));
     }
 
     // İstekten gelen SEO alanlarını post'a HAM olarak (fallback uygulamadan) yazar.
@@ -244,7 +259,7 @@ public class PostServiceImpl implements IPostService {
         post.setSlug(postRequestDto.getSlug());
         post.setTitle(postRequestDto.getTitle());
         post.setContent(postRequestDto.getContent());
-        post.setImage(postRequestDto.getImage());
+        post.setCoverMedia(resolveCoverMedia(postRequestDto.getCoverMediaId()));
         post.setStatus(parseStatus(postRequestDto.getStatus(), post.getStatus()));
         post.setLanguage(parseLanguage(postRequestDto.getLanguage(), post.getLanguage()));
         // NOT: collectionIds hiç gönderilmezse (null) mevcut atamalar korunur;
@@ -263,6 +278,14 @@ public class PostServiceImpl implements IPostService {
             post.setMedia(resolveMedia(post, postRequestDto.getMedia()));
         }
         applySeo(post, postRequestDto.getSeo());
+        // Diğer basit alanlar (slug/title/image/content) gibi doğrudan üzerine yazılıyor -
+        // liste alanlarındaki (media/tags/collections) null-korur mantığı burada geçerli değil.
+        post.setPublishAt(postRequestDto.getPublishAt());
+        // Yazı (elle ya da bu istekle) PUBLISHED durumuna geldiyse artık "zamanlanmış"
+        // olmasının bir anlamı kalmıyor - eski bir tarih orada unutulmuş gibi durmasın.
+        if (post.getStatus() == PostStatus.PUBLISHED) {
+            post.setPublishAt(null);
+        }
 
         Post updatedPost = postRepository.save(post);
         return mapToDto(updatedPost);
@@ -352,7 +375,7 @@ public class PostServiceImpl implements IPostService {
                 ? post.getMetaDescription()
                 : buildExcerpt(post.getContent(), 155);
 
-        String ogImageUrl = hasText(post.getOgImageUrl()) ? post.getOgImageUrl() : post.getImage();
+        String ogImageUrl = hasText(post.getOgImageUrl()) ? post.getOgImageUrl() : resolveMediaUrl(post.getCoverMedia());
 
         String canonicalUrl = hasText(post.getCanonicalUrl())
                 ? post.getCanonicalUrl()
@@ -433,7 +456,7 @@ public class PostServiceImpl implements IPostService {
                 post.getId(),
                 post.getSlug(),
                 post.getTitle(),
-                post.getImage(),
+                resolveMediaUrl(post.getCoverMedia()),
                 post.getContent(),
                 post.getStatus().name(),
                 post.getLanguage().name(),
@@ -442,13 +465,20 @@ public class PostServiceImpl implements IPostService {
                 mediaDtos,
                 resolveSeo(post),
                 calculateReadingTime(post.getContent()),
+                post.getPublishAt(),
                 post.getAuthor().getUsername(), // Yazarın sadece adını dönüyoruz
                 post.getAuthor().getFullName(),
-                post.getAuthor().getAvatarUrl(),
+                resolveMediaUrl(post.getAuthor().getAvatarMedia()),
                 post.getAuthor().getSlug(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
+    }
+
+    // Media ilişkisini (kapak görseli ya da yazarın avatarı) mutlak URL'e çevirir.
+    // Media null ise (görsel/avatar seçilmemişse) null döner - bu geçerli bir durum.
+    private String resolveMediaUrl(Media media) {
+        return media != null ? toAbsoluteUrl(media.getFileUrl()) : null;
     }
 
     // MediaServiceImpl'deki toAbsoluteUrl ile aynı mantık - göreli path'i

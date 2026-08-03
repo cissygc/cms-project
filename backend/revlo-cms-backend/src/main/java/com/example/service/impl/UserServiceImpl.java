@@ -2,16 +2,19 @@ package com.example.service.impl;
 
 import com.example.dto.user.UpdateProfileRequestDto;
 import com.example.dto.user.UserResponseDto;
+import com.example.entity.Media;
 import com.example.entity.Role;
 import com.example.entity.User;
 import com.example.exception.BaseException;
 import com.example.exception.ErrorMessage;
 import com.example.exception.MessageType;
+import com.example.repository.MediaRepository;
 import com.example.repository.PostRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IUserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,11 +24,14 @@ public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
     private final PostRepository postRepository;
+    private final MediaRepository mediaRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, PostRepository postRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, PostRepository postRepository,
+                           MediaRepository mediaRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
+        this.mediaRepository = mediaRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -55,8 +61,10 @@ public class UserServiceImpl implements IUserService {
         if (dto.getBio() != null) {
             user.setBio(dto.getBio());
         }
-        if (dto.getAvatarUrl() != null) {
-            user.setAvatarUrl(dto.getAvatarUrl());
+        if (dto.getAvatarMediaId() != null) {
+            Media avatarMedia = mediaRepository.findById(dto.getAvatarMediaId())
+                    .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Profil fotoğrafı bulunamadı")));
+            user.setAvatarMedia(avatarMedia);
         }
         if (dto.getSlug() != null && !dto.getSlug().equals(user.getSlug())) {
             if (userRepository.existsBySlug(dto.getSlug())) {
@@ -96,12 +104,25 @@ public class UserServiceImpl implements IUserService {
                 user.getUsername(),
                 user.getFullName(),
                 user.getBio(),
-                user.getAvatarUrl(),
+                resolveMediaUrl(user.getAvatarMedia()),
                 user.getSlug(),
                 user.getRole().name(),
                 user.isDeleted(),
                 postCount
         );
+    }
+
+    // PostServiceImpl/DashboardServiceImpl'deki aynı yardımcı metodun tekrarı -
+    // servisler birbirine bağımlı olmasın diye bilinçli olarak kopyalanıyor.
+    private String resolveMediaUrl(Media media) {
+        if (media == null) {
+            return null;
+        }
+        if (media.getFileUrl() != null && media.getFileUrl().startsWith("http")) {
+            return media.getFileUrl();
+        }
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        return baseUrl + media.getFileUrl();
     }
 
     @Override
