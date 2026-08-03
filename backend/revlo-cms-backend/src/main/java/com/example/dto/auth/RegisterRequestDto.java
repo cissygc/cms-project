@@ -28,8 +28,8 @@ public class RegisterRequestDto {
     @Size(max = 2000, message = "Bio en fazla 2000 karakter olabilir")
     private String bio;
 
-    @Size(max = 500, message = "Avatar URL çok uzun")
-    private String avatarUrl;
+    // Opsiyonel - profil fotoğrafı olarak kullanılacak medyanın id'si (Media kütüphanesinden seçilir)
+    private Long avatarMediaId;
 
     // Opsiyonel - boş bırakılırsa kullanıcı adından otomatik üretilir (bkz. AuthServiceImpl)
     @Size(min = 3, max = 60, message = "Slug 3 ile 60 karakter arasında olmalıdır")

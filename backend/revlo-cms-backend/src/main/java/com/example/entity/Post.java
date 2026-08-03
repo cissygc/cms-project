@@ -20,8 +20,12 @@ public class Post {
     @Column(nullable = false)
     private String title;
 
-    // Decap'ten gelecek olan medya URL'ini tutacağımız alan
-    private String image;
+    // Kapak görseli - ARTIK düz bir URL string DEĞİL, Media'ya gerçek bir ilişki.
+    // Önceden string olduğu için silme koruması uygulanamıyordu ve kimin
+    // yüklediği bilgisine post üzerinden erişilemiyordu - bu ilişkiyle ikisi de düzeldi.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cover_media_id")
+    private Media coverMedia;
 
     @Column(columnDefinition = "TEXT")
     private String content;
@@ -31,6 +35,12 @@ public class Post {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PostStatus status = PostStatus.DRAFT;
+
+    // Zamanlanmış yayın - status DRAFT iken bu alan geçmişte/şimdi olmayan bir
+    // tarihe ayarlanırsa, PostPublishScheduler bu tarih geldiğinde status'u
+    // otomatik olarak PUBLISHED'e çevirir. status zaten PUBLISHED ise bu alanın
+    // bir etkisi yoktur (yazı zaten yayında).
+    private LocalDateTime publishAt;
 
     // Yazının dili - site tr/en/de/ru dillerinde yayında. Belirtilmezse TR varsayılır
     // (bkz. PostServiceImpl.parseLanguage).

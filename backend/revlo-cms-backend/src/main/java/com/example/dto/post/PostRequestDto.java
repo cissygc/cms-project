@@ -8,6 +8,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Data
 public class PostRequestDto {
 
@@ -20,8 +23,9 @@ public class PostRequestDto {
     @Size(max = 300, message = "Başlık en fazla 300 karakter olabilir")
     private String title;
 
-    // Opsiyonel medya alanı
-    private String image;
+    // Opsiyonel - kapak görseli olarak kullanılacak medyanın id'si (Media kütüphanesinden
+    // seçilir). Artık düz bir URL string DEĞİL, gerçek bir medya referansı.
+    private Long coverMediaId;
 
     @NotBlank(message = "İçerik boş bırakılamaz")
     private String content;
@@ -33,19 +37,24 @@ public class PostRequestDto {
     private String language;
 
     // Opsiyonel - yazının atandığı koleksiyon id'leri
-    private java.util.List<Long> collectionIds;
+    private List<Long> collectionIds;
 
     // Opsiyonel - kapak görseli HARİÇ, içerik içinde gösterilecek sıralı görseller.
     // Listedeki sıra = gösterim sırası. Gönderilmezse (null) mevcut liste korunur
     // (bkz. PostServiceImpl.updatePost); boş [] gönderilirse tüm görseller kaldırılır.
-    private java.util.List<PostMediaRequestDto> media;
+    private List<PostMediaRequestDto> media;
 
     // Opsiyonel - serbest metin etiket isimleri. Var olmayan bir isim otomatik
     // oluşturulur (bkz. PostServiceImpl.resolveTags). Null = mevcut etiketler
     // korunur, [] = tüm etiketler kaldırılır (collectionIds ile aynı mantık).
-    private java.util.List<String> tagNames;
+    private List<String> tagNames;
 
     // Opsiyonel - hiç gönderilmezse tüm SEO alanları fallback'e düşer (bkz. PostServiceImpl.resolveSeo)
     @Valid
     private PostSeoRequestDto seo;
+
+    // Opsiyonel - dolu ve status=DRAFT ise "zamanlanmış yayın" anlamına gelir,
+    // PostPublishScheduler bu tarih geldiğinde otomatik PUBLISHED yapar.
+    // status=PUBLISHED gönderilirse bu alanın bir etkisi olmaz (yazı zaten yayında).
+    private LocalDateTime publishAt;
 }

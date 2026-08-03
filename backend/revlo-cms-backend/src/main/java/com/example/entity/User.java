@@ -23,7 +23,9 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String bio;
 
-    private String avatarUrl;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "avatar_media_id")
+    private Media avatarMedia;
 
     // Public sitede yazarın "yazar sayfası" linki için (örn. /yazar/ceren-gurcan).
     // Boş bırakılabilir; kullanıcı profilini ilk kez düzenlerken belirler.

@@ -16,8 +16,8 @@ public class UpdateProfileRequestDto {
     @Size(max = 2000, message = "Bio en fazla 2000 karakter olabilir")
     private String bio;
 
-    @Size(max = 500, message = "Avatar URL çok uzun")
-    private String avatarUrl;
+    // Opsiyonel - profil fotoğrafı olarak kullanılacak medyanın id'si (Media kütüphanesinden seçilir)
+    private Long avatarMediaId;
 
     @Size(min = 3, max = 60, message = "Slug 3 ile 60 karakter arasında olmalıdır")
     @Pattern(regexp = "^[a-z0-9]+(-[a-z0-9]+)*$", message = "Slug sadece küçük harf, rakam ve tire (-) içerebilir, örn: ceren-gurcan")

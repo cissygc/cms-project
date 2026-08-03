@@ -26,4 +26,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // Aynı mantık tag'ler için (bkz. TagServiceImpl.deleteTag)
     java.util.List<Post> findAllByTags_Id(Long tagId);
+
+    // Zamanlanmış yayın için: status DRAFT ve publishAt geçmişte/şimdi olan
+    // yazıları bulur (bkz. PostPublishScheduler)
+    java.util.List<Post> findAllByStatusAndPublishAtLessThanEqual(com.example.entity.PostStatus status, java.time.LocalDateTime now);
+
+    // Bir medya kapak görseli olarak kullanılıyor mu - MediaServiceImpl.deleteMedia
+    // artık bunu da kontrol ediyor (önceden coverMedia bir string olduğu için bu
+    // kontrol yapılamıyordu).
+    boolean existsByCoverMedia_Id(Long mediaId);
 }
