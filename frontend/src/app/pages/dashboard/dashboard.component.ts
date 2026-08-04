@@ -1,461 +1,100 @@
-import { Component, OnInit, inject } from "@angular/core";
-import { CommonModule } from "@angular/common";
-import { RouterModule } from "@angular/router";
-import { DashboardService } from "../../services/dashboard.service";
-import { AuthService } from "../../services/auth.service";
-import { Post } from "../../models/post.model";
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { DashboardService } from '../../services/dashboard.service';
+import { AuthService } from '../../services/auth.service';
+import { Post } from '../../models/post.model';
+import { StatCardComponent } from '../../components/stat-card/stat-card.component';
+import { BadgeComponent, BadgeTone } from '../../components/badge/badge.component';
 
 @Component({
-  selector: "app-dashboard",
+  selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, StatCardComponent, BadgeComponent],
   template: `
-    <div class="container-wrapper">
-      <div class="container">
-        <!-- Hero Welcome Banner -->
-        <div class="hero-card">
-          <div class="hero-header">
-            <div>
-              <span class="hero-chip"
-                >✨ REVLO AI İÇERİK YÖNETİM PLATFORMU</span
-              >
-              <h1 class="hero-title">
-                Hoş Geldiniz,
-                <span class="gradient-text">{{ authService.username() }}</span>
-                👋
-              </h1>
-              <p class="hero-sub">
-                Yeni içerikler ekleyin, yayınlanan tüm yazılarınızı ana sayfada
-                anında sergileyin ve yönetin.
-              </p>
-            </div>
+    <!-- Üst başlık satırı: solda "Hoş geldin", sağda "Yeni Yazı" butonu -->
+    <div class="flex items-start justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-extrabold text-text-primary">
+          Hoş geldin, {{ authService.username() }}!
+        </h1>
+        <p class="text-text-muted mt-1">
+          Yazılarını ve medyalarını buradan yönetebilirsin.
+        </p>
+      </div>
+      <a routerLink="/posts/new"
+         class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary !text-white text-sm font-bold hover:bg-primary-dark transition-colors shrink-0">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Yeni Yazı
+      </a>
+    </div>
 
-            <a routerLink="/posts/new" class="btn btn-primary btn-lg">
-              <span>+ Yeni Yazı Oluştur</span>
-            </a>
-          </div>
+    <!-- Sayı kartları - StatCardComponent'i 2 (admin ise 3) kere kullanıyoruz -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+      <app-stat-card [value]="totalPosts" label="Toplam Yazı">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        </svg>
+      </app-stat-card>
 
-          <!-- Metrics Row -->
-          <div class="stats-row">
-            <div class="stat-pill">
-              <div class="stat-icon-box purple">📝</div>
-              <div>
-                <span class="stat-num">{{ totalPosts }}</span>
-                <span class="stat-label">Yayınlanan Yazı</span>
-              </div>
-            </div>
+      <app-stat-card [value]="totalMedia" label="Medya Dosyası">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 12V4.5A2.25 2.25 0 015.25 2.25h15A2.25 2.25 0 0122.5 4.5v9a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15.75z" />
+        </svg>
+      </app-stat-card>
 
-            <div class="stat-pill">
-              <div class="stat-icon-box magenta">🖼️</div>
-              <div>
-                <span class="stat-num">{{ totalMedia }}</span>
-                <span class="stat-label">Medya Dosyası</span>
-              </div>
-            </div>
+      <app-stat-card *ngIf="authService.isAdmin()" [value]="totalUsers" label="Yetkili Kullanıcı">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+        </svg>
+      </app-stat-card>
+    </div>
 
-            <div *ngIf="authService.isAdmin()" class="stat-pill">
-              <div class="stat-icon-box rose">👥</div>
-              <div>
-                <span class="stat-num">{{ totalUsers }}</span>
-                <span class="stat-label">Yetkili Kullanıcı</span>
-              </div>
-            </div>
-          </div>
+    <!-- Son yazılar bölümü -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-text-primary">Son Yazılar</h2>
+      <a routerLink="/posts" class="text-sm font-semibold text-primary hover:underline">Tümünü gör →</a>
+    </div>
+
+    <!-- Yükleniyor durumu -->
+    <div *ngIf="isLoading" class="text-center py-16 text-text-muted">
+      Yazılar yükleniyor...
+    </div>
+
+    <!-- Hiç yazı yoksa gösterilen durum -->
+    <div *ngIf="!isLoading && posts.length === 0"
+         class="text-center py-16 bg-surface border border-border rounded-2xl">
+      <p class="text-lg font-bold text-text-primary mb-1">Henüz hiç yazı yok</p>
+      <p class="text-text-muted mb-4">İlk yazını oluşturarak başlayabilirsin.</p>
+      <a routerLink="/posts/new" class="inline-block px-5 py-2.5 rounded-xl bg-primary !text-white text-sm font-bold hover:bg-primary-dark transition-colors">
+        + İlk Yazıyı Oluştur
+      </a>
+    </div>
+
+    <!-- Yazı kartları listesi -->
+    <div *ngIf="!isLoading && posts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div *ngFor="let post of posts"
+           class="bg-surface border border-border rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
+        <div class="h-36 bg-bg">
+          <img *ngIf="post.image" [src]="post.image" [alt]="post.title" class="w-full h-full object-cover" />
         </div>
-
-        <!-- Main Page Posts Feed -->
-        <div class="feed-card">
-          <div class="feed-header">
-            <div>
-              <span class="section-chip">YAYIN AKIŞI</span>
-              <h2 class="section-title">Ana Sayfa Yayın Akışı</h2>
-              <p class="section-desc">
-                Sistemde yayınlanan güncel blog ve içerik yazıları
-              </p>
-            </div>
-            <a routerLink="/posts" class="btn btn-secondary btn-sm"
-              >Tümünü Yönet →</a
-            >
+        <div class="p-4">
+          <div class="flex items-center justify-between mb-2">
+            <app-badge [text]="statusText(post.status)" [tone]="statusTone(post.status)"></app-badge>
+            <span class="text-xs text-text-muted">{{ formatDate(post.createdAt) }}</span>
           </div>
-
-          <!-- Loading State -->
-          <div *ngIf="isLoading" class="loading-state">
-            <div class="spinner"></div>
-            <span>Yazılar taranıyor...</span>
-          </div>
-
-          <!-- Empty State -->
-          <div *ngIf="!isLoading && posts.length === 0" class="empty-state">
-            <div class="empty-icon">✍️</div>
-            <h3>Henüz Hiç Yazı Yok</h3>
-            <p>
-              Hemen ilk yazınızı oluşturarak ana sayfada görüntüleyebilirsiniz.
-            </p>
-            <a routerLink="/posts/new" class="btn btn-primary"
-              >+ İlk Yazıyı Oluştur</a
-            >
-          </div>
-
-          <!-- Main Page Posts Grid -->
-          <div *ngIf="!isLoading && posts.length > 0" class="posts-grid">
-            <div *ngFor="let post of posts" class="post-card">
-              <div class="post-image-box">
-                <img
-                  *ngIf="post.image"
-                  [src]="post.image"
-                  [alt]="post.title"
-                  class="post-img"
-                />
-                <div *ngIf="!post.image" class="post-img-fallback">
-                  <span>REVLO AI</span>
-                </div>
-                <span class="category-chip">BLOG</span>
-              </div>
-
-              <div class="post-content">
-                <div class="post-meta">
-                  <span class="author-badge"
-                    >✍️ {{ post.authorName || "Revlo Ekibi" }}</span
-                  >
-                  <span class="date-text"
-                    >📅 {{ formatDate(post.createdAt) }}</span
-                  >
-                </div>
-
-                <h3 class="post-title">{{ post.title }}</h3>
-                <p class="post-excerpt">{{ getExcerpt(post.content) }}</p>
-
-                <div class="post-footer">
-                  <span class="slug-tag">/posts/{{ post.slug }}</span>
-                  <a
-                    [routerLink]="['/posts/edit', post.slug]"
-                    class="btn btn-purple-sm"
-                  >
-                    ✏️ Düzenle
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
+          <h3 class="font-bold text-text-primary mb-1 line-clamp-2">{{ post.title }}</h3>
+          <p class="text-sm text-text-muted mb-3">{{ post.authorFullName || post.authorName }}</p>
+          <a [routerLink]="['/posts/edit', post.slug]"
+             class="text-sm font-semibold text-primary hover:underline">
+            Düzenle →
+          </a>
         </div>
       </div>
     </div>
   `,
-  styles: [
-    `
-      /* Bembeyaz Arka Plan (Tüm Sayfayı Kapsar) */
-      .container-wrapper {
-        background-color: #ffffff;
-        min-height: 100vh;
-        padding-top: 20px;
-        padding-bottom: 40px;
-      }
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
-      }
-
-      /* Hero Banner - Beyaz Zemin, Mor Kenarlık ve Yazılar */
-      .hero-card {
-        padding: 38px 40px;
-        margin-bottom: 32px;
-        background: linear-gradient(135deg, #efe6ff 0%, #ffffff 50%, #efe6ff 100%);
-        border: 2px solid #f4f0fa; /* Mor Kenarlık */
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(124, 58, 237, 0.08); /* Hafif mor gölge */
-      }
-      .hero-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 24px;
-        margin-bottom: 32px;
-      }
-      .hero-chip {
-        display: inline-block;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        color: #7c3aed; /* Mor Yazı */
-        background: #f4f0fa; /* Açık Mor Zemin */
-        padding: 4px 12px;
-        border-radius: 20px;
-        margin-bottom: 8px;
-      }
-      .hero-title {
-        font-size: 34px;
-        font-weight: 800;
-        margin-bottom: 8px;
-        color: #333333; /* Koyu Gri Ana Başlık */
-      }
-      .gradient-text {
-        color: #7c3aed; /* İsim mor */
-      }
-      .hero-sub {
-        font-size: 16px;
-        color: #6b7280; /* Gri Alt Başlık */
-        max-width: 620px;
-      }
-      .btn-lg {
-        padding: 14px 28px;
-        font-size: 15px;
-      }
-      .stats-row {
-        display: flex;
-        gap: 20px;
-        padding-top: 24px;
-        border-top: 1px solid #eae5f2; /* Açık mor çizgi */
-      }
-      .stat-pill {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        background: #ffffff;
-        padding: 12px 22px;
-        border-radius: 16px;
-        border: 1px solid #eae5f2;
-      }
-      .stat-icon-box {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-      }
-      .stat-icon-box.purple {
-        background: #f4f0fa;
-        border: 1px solid #d8c8f5;
-      }
-      .stat-icon-box.magenta {
-        background: #fdf4ff;
-        border: 1px solid #fac8ff;
-      }
-      .stat-icon-box.rose {
-        background: #fff1f2;
-        border: 1px solid #fecdd3;
-      }
-
-      .stat-num {
-        font-family: "Outfit", sans-serif;
-        font-size: 22px;
-        font-weight: 800;
-        color: #5a32a8; /* Mor Rakam */
-        display: block;
-        line-height: 1;
-      }
-      .stat-label {
-        font-size: 12px;
-        color: #6b7280;
-        font-weight: 600;
-      }
-
-      /* Beyaz Kısım - Yayın Akışı */
-      .feed-card {
-        padding: 36px;
-        background: linear-gradient(135deg, #efe6ff 0%, #ffffff 50%, #efe6ff 100%);
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-        border: 1px solid #f4f0fa;
-      }
-      .feed-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 32px;
-      }
-      .section-chip {
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        color: #5a32a8;
-        margin-bottom: 4px;
-        display: block;
-      }
-      .section-title {
-        font-size: 24px;
-        font-weight: 800;
-        color: #333333;
-      }
-      .section-desc {
-        font-size: 14px;
-        color: #6b7280;
-      }
-
-      .posts-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 28px;
-      }
-      .post-card {
-        background: #ffffff;
-        border: 1px solid #eae5f2;
-        border-radius: 12px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-      }
-      .post-card:hover {
-        transform: translateY(-4px);
-        border-color: #7c3aed;
-        box-shadow: 0 10px 25px rgba(124, 58, 237, 0.08);
-      }
-      .post-image-box {
-        position: relative;
-        height: 190px;
-        background: #f8f6fb;
-        overflow: hidden;
-      }
-      .post-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .post-img-fallback {
-        width: 100%;
-        height: 100%;
-        background: #f4f0fa; /* Açık mor zemin */
-        color: #7c3aed; /* Mor yazı */
-        font-size: 22px;
-        font-weight: 900;
-        font-family: "Outfit", sans-serif;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .category-chip {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        background: #f4f0fa;
-        color: #5a32a8;
-        font-size: 10px;
-        font-weight: 800;
-        padding: 4px 10px;
-        border-radius: 6px;
-        border: 1px solid #eae5f2;
-      }
-      .post-content {
-        padding: 22px;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        justify-content: space-between;
-      }
-      .post-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 12px;
-        margin-bottom: 10px;
-      }
-      .author-badge {
-        font-weight: 700;
-        color: #7c3aed;
-      }
-      .date-text {
-        color: #6b7280;
-      }
-      .post-title {
-        font-size: 19px;
-        font-weight: 800;
-        color: #333333;
-        margin-bottom: 10px;
-        line-height: 1.4;
-      }
-      .post-excerpt {
-        font-size: 14px;
-        color: #4b5563;
-        line-height: 1.6;
-        margin-bottom: 20px;
-      }
-      .post-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-top: 16px;
-        border-top: 1px solid #f8f6fb;
-      }
-      .slug-tag {
-        font-family: "JetBrains Mono", monospace;
-        font-size: 11px;
-        color: #5a32a8;
-        background-color: #f4f0fa;
-        padding: 4px 8px;
-        border-radius: 4px;
-      }
-      .btn-purple-sm {
-        background: #7c3aed !important;
-        color: #ffffff !important;
-        padding: 6px 14px;
-        font-size: 12px;
-        font-weight: 700;
-        border-radius: 20px;
-        box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        text-decoration: none;
-        transition: all 0.3s;
-      }
-      .btn-purple-sm:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);
-      }
-
-      .loading-state,
-      .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: #6b7280;
-      }
-      .empty-icon {
-        font-size: 44px;
-        margin-bottom: 12px;
-      }
-      .spinner {
-        width: 38px;
-        height: 38px;
-        border: 3px solid #f4f0fa;
-        border-top-color: #7c3aed;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        margin: 0 auto 12px;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .btn-sm {
-        padding: 6px 14px;
-        font-size: 12px;
-      }
-      .btn-primary {
-        background: #7c3aed;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-      }
-      .btn-secondary {
-        background: #f4f0fa;
-        color: #5a32a8;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        text-decoration: none;
-        font-weight: bold;
-        display: inline-block;
-      }
-    `,
-  ],
 })
 export class DashboardComponent implements OnInit {
   dashboardService = inject(DashboardService);
@@ -482,19 +121,23 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  getExcerpt(content?: string): string {
-    if (!content) return "İçerik özeti bulunmuyor.";
-    const clean = content.replace(/#|\*|`|>|\[|\]|\(/g, "").trim();
-    return clean.length > 100 ? clean.substring(0, 100) + "..." : clean;
+  // Backend "DRAFT"/"PUBLISHED" diye gönderiyor, biz burada Türkçe okunabilir hale çeviriyoruz
+  statusText(status: string): string {
+    return status === 'PUBLISHED' ? 'Yayında' : 'Taslak';
+  }
+
+  // BadgeComponent'e hangi renk grubunu (tone) kullanacağını söylüyoruz
+  statusTone(status: string): BadgeTone {
+    return status === 'PUBLISHED' ? 'success' : 'warning';
   }
 
   formatDate(iso?: string): string {
-    if (!iso) return "";
+    if (!iso) return '';
     const d = new Date(iso);
-    return d.toLocaleDateString("tr-TR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+    return d.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
   }
 }

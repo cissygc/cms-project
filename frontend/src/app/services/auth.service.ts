@@ -2,9 +2,10 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
-import { User, AuthResponse, LoginPayload } from '../models/user.model';
+import { AuthResponse, LoginPayload } from '../models/user.model';
 import { API_CONFIG } from '../config';
 import { ToastService } from './toast.service';
+
 
 @Injectable({
   providedIn: 'root',
@@ -14,14 +15,14 @@ export class AuthService {
   private router = inject(Router);
   private toastService = inject(ToastService);
 
-  private currentUserSignal = signal<User | null>(this.getStoredUser());
+  private currentUserSignal = signal<AuthResponse | null>(this.getStoredUser());
 
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly isLoggedIn = computed(() => !!this.currentUserSignal()?.token);
   readonly isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
   readonly username = computed(() => this.currentUserSignal()?.username || '');
 
-  getStoredUser(): User | null {
+  getStoredUser(): AuthResponse | null {
     try {
       const raw = localStorage.getItem(API_CONFIG.storageKey);
       return raw ? JSON.parse(raw) : null;
@@ -43,15 +44,15 @@ export class AuthService {
       .post<AuthResponse>(`${API_CONFIG.baseUrl}/api/auth/signin`, credentials)
       .pipe(
         tap((res) => {
-          const user: User = {
+          const session: AuthResponse = {
             username: res.username,
             role: res.role,
             token: res.token,
             type: res.type || 'Bearer',
           };
-          this.currentUserSignal.set(user);
-          localStorage.setItem(API_CONFIG.storageKey, JSON.stringify(user));
-          this.toastService.success(`Hoş geldin, ${user.username}!`);
+          this.currentUserSignal.set(session);
+          localStorage.setItem(API_CONFIG.storageKey, JSON.stringify(session));
+          this.toastService.success(`Hoş geldin, ${session.username}!`);
           this.router.navigate(['/dashboard']);
         }),
         catchError((err) => {

@@ -12,8 +12,9 @@ export class UserService {
   private usersUrl = `${API_CONFIG.baseUrl}/api/users`;
   private signupUrl = `${API_CONFIG.baseUrl}/api/auth/signup`;
 
-  getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(this.usersUrl).pipe(
+  // includeDeleted=true -> silinmiş kullanıcılar da listeye dahil olur
+  getUsers(includeDeleted = false): Observable<User[]> {
+    return this.http.get<User[]>(`${this.usersUrl}?includeDeleted=${includeDeleted}`).pipe(
       catchError((err) => {
         const msg = err?.error?.exception?.message || 'Kullanıcı listesi alınamadı.';
         return throwError(() => new Error(msg));
@@ -21,8 +22,10 @@ export class UserService {
     );
   }
 
-  createUser(payload: SignupPayload): Observable<User> {
-    return this.http.post<User>(this.signupUrl, payload).pipe(
+  // NOT: backend burada tam bir "User" DEĞİL, sadece {message: "..."} döner
+  // (bkz. RegisterResponseDto). Önceden yanlışlıkla User tipinde bekleniyordu.
+  createUser(payload: SignupPayload): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(this.signupUrl, payload).pipe(
       catchError((err) => {
         const msg = err?.error?.exception?.message || 'Kullanıcı oluşturulamadı.';
         return throwError(() => new Error(msg));
