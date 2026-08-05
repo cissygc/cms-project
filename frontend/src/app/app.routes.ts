@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
+import { unsavedChangesGuard } from './guards/post-editor.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -25,12 +26,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/post-editor/post-editor.component').then((m) => m.PostEditorComponent),
     canActivate: [authGuard],
+    canDeactivate: [unsavedChangesGuard],
   },
   {
     path: 'posts/edit/:slug',
     loadComponent: () =>
       import('./pages/post-editor/post-editor.component').then((m) => m.PostEditorComponent),
     canActivate: [authGuard],
+    canDeactivate: [unsavedChangesGuard],
   },
   {
     path: 'media',
