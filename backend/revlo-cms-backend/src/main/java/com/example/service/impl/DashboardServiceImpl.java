@@ -1,7 +1,6 @@
 package com.example.service.impl;
 
-import com.example.dto.post.PostResponseDto;
-import com.example.dto.collection.CollectionSummaryDto;
+import com.example.dto.PostResponseDto;
 import com.example.dto.dashboard.DashboardStatsDto;
 import com.example.entity.Media;
 import com.example.entity.Post;
@@ -59,10 +58,6 @@ public class DashboardServiceImpl implements IDashboardService {
     }
 
     private PostResponseDto mapToDto(Post post) {
-        List<CollectionSummaryDto> collectionDtos = post.getCollections().stream()
-                .map(c -> new CollectionSummaryDto(c.getId(), c.getName(), c.getSlug()))
-                .collect(Collectors.toList());
-
         return new PostResponseDto(
                 post.getId(),
                 post.getSlug(),

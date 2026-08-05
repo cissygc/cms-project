@@ -1,4 +1,4 @@
-package com.example.dto.post;
+package com.example.dto;
 
 import com.example.dto.collection.CollectionSummaryDto;
 import com.example.dto.postMedia.PostMediaResponseDto;
@@ -29,9 +29,6 @@ public class PostResponseDto {
     // Zamanlanmış yayın tarihi (bkz. PostPublishScheduler) - null ise zamanlama yok
     private LocalDateTime publishAt;
     private String authorName;
-    private String authorFullName;
-    private String authorAvatarUrl;
-    private String authorSlug;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -1,7 +1,6 @@
 package com.example.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -10,7 +9,6 @@ public class RegisterRequestDto {
 
     @NotBlank(message = "Kullanıcı adı boş bırakılamaz")
     @Size(min = 3, max = 20, message = "Kullanıcı adı 3 ile 20 karakter arasında olmalıdır")
-    @Pattern(regexp = "^[a-zA-Z0-9_.]+$", message = "Kullanıcı adı sadece harf, rakam, alt çizgi ve nokta içerebilir")
     private String username;
 
     @NotBlank(message = "Şifre boş bırakılamaz")

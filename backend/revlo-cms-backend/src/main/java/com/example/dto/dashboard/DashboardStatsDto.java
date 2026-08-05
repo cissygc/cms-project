@@ -1,6 +1,6 @@
 package com.example.dto.dashboard;
 
-import com.example.dto.post.PostResponseDto;
+import com.example.dto.PostResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

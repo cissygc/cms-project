@@ -1,6 +1,6 @@
 package com.example.controller;
 
-import com.example.dto.post.PostRequestDto;
+import com.example.dto.PostRequestDto;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

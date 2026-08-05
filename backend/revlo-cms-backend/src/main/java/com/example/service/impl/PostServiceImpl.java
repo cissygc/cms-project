@@ -33,7 +33,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 // SINIF SEVİYESİNDE @Transactional: updatePost (ve diğer metodlar) bir post'u
@@ -365,25 +364,8 @@ public class PostServiceImpl implements IPostService {
     // ---------- CMS dışındaki (herkese açık) siteler için ----------
 
     @Override
-    public List<PostResponseDto> getAllPublicPosts(String language, String collectionSlug) {
-        Language languageFilter = null;
-        if (language != null && !language.isBlank()) {
-            try {
-                languageFilter = Language.valueOf(language.trim().toUpperCase());
-            } catch (IllegalArgumentException ex) {
-                throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
-                        "Geçersiz dil: " + language + " (izin verilenler: TR, EN, DE, RU)"));
-            }
-        }
-
-        final Language finalLanguageFilter = languageFilter;
-
-        // Sadece yayınlanmış yazılar public API'de görünür - draft'lar burada listelenmez.
+    public List<PostResponseDto> getAllPublicPosts() {
         return postRepository.findAll().stream()
-                .filter(post -> post.getStatus() == PostStatus.PUBLISHED)
-                .filter(post -> finalLanguageFilter == null || post.getLanguage() == finalLanguageFilter)
-                .filter(post -> collectionSlug == null || collectionSlug.isBlank()
-                        || post.getCollections().stream().anyMatch(c -> c.getSlug().equals(collectionSlug)))
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -392,12 +374,6 @@ public class PostServiceImpl implements IPostService {
     public PostResponseDto getPublicPostBySlug(String slug) {
         Post post = postRepository.findBySlug(slug)
                 .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Yazı bulunamadı")));
-
-        // Draft bir yazının linkini bilen biri direkt slug ile de erişemesin.
-        if (post.getStatus() != PostStatus.PUBLISHED) {
-            throw new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Yazı bulunamadı"));
-        }
-
         return mapToDto(post);
     }
 

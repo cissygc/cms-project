@@ -1,6 +1,5 @@
 package com.example.service.impl;
 
-import com.example.dto.user.UpdateProfileRequestDto;
 import com.example.dto.user.UserResponseDto;
 import com.example.entity.Media;
 import com.example.entity.Role;
