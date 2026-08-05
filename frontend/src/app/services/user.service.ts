@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
-import { User, SignupPayload } from '../models/user.model';
+import { User, SignupPayload, UpdateProfilePayload } from '../models/user.model';
 import { API_CONFIG } from '../config';
 
 @Injectable({
@@ -37,6 +37,25 @@ export class UserService {
     return this.http.delete<void>(`${this.usersUrl}/${encodeURIComponent(id)}`).pipe(
       catchError((err) => {
         const msg = err?.error?.exception?.message || 'Kullanıcı silinemedi.';
+        return throwError(() => new Error(msg));
+      })
+    );
+  }
+
+  // Giriş yapmış kullanıcının kendi profili - ADMIN/EDITOR fark etmez
+  getMyProfile(): Observable<User> {
+    return this.http.get<User>(`${this.usersUrl}/me`).pipe(
+      catchError((err) => {
+        const msg = err?.error?.exception?.message || 'Profil bilgileri alınamadı.';
+        return throwError(() => new Error(msg));
+      })
+    );
+  }
+
+  updateMyProfile(payload: UpdateProfilePayload): Observable<User> {
+    return this.http.put<User>(`${this.usersUrl}/me`, payload).pipe(
+      catchError((err) => {
+        const msg = err?.error?.exception?.message || 'Profil güncellenemedi.';
         return throwError(() => new Error(msg));
       })
     );

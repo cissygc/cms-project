@@ -72,6 +72,9 @@ export interface PostPayload {
   title: string;
   content: string;
   coverMediaId?: number;
+  // true gönderilirse kapak görseli bilerek kaldırılır. Gönderilmezse (ve
+  // coverMediaId de yoksa) mevcut kapak korunur - backend'in davranışı budur.
+  removeCover?: boolean;
   status?: string;
   language?: string;
   collectionIds?: number[];

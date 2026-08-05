@@ -25,7 +25,13 @@ public class PostRequestDto {
 
     // Opsiyonel - kapak görseli olarak kullanılacak medyanın id'si (Media kütüphanesinden
     // seçilir). Artık düz bir URL string DEĞİL, gerçek bir medya referansı.
+    // NOT: updatePost'ta gönderilmezse (null) mevcut kapak KORUNUR - kapağı bilerek
+    // kaldırmak için removeCover=true göndermek gerekir (bkz. removeCover alanı).
     private Long coverMediaId;
+
+    // Sadece updatePost'ta anlamlı - true gönderilirse kapak görseli bilerek
+    // kaldırılır. coverMediaId de doluysa coverMediaId öncelikli sayılır.
+    private boolean removeCover = false;
 
     @NotBlank(message = "İçerik boş bırakılamaz")
     private String content;

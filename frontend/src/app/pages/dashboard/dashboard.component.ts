@@ -77,8 +77,14 @@ import { BadgeComponent, BadgeTone } from '../../components/badge/badge.componen
     <div *ngIf="!isLoading && posts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       <div *ngFor="let post of posts"
            class="bg-surface border border-border rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
-        <div class="h-36 bg-bg">
+        <div class="h-36 bg-primary-light flex items-center justify-center overflow-hidden">
           <img *ngIf="post.image" [src]="post.image" [alt]="post.title" class="w-full h-full object-cover" />
+          <img
+            *ngIf="!post.image"
+            src="assets/branding/revlo-logo.png"
+            alt="Revlo"
+            class="h-9 w-auto opacity-40"
+          />
         </div>
         <div class="p-4">
           <div class="flex items-center justify-between mb-2">

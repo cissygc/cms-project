@@ -15,9 +15,9 @@ import { AuthService } from '../../services/auth.service';
 
       <!-- Logo alanı - gerçek Revlo logosu, öncekinden daha büyük -->
       <div class="h-20 flex items-center px-6 border-b border-border">
-        <a routerLink="/dashboard" class="flex items-center gap-2.5">
+        <a routerLink="/dashboard" class="flex items-end gap-2.5">
           <img src="assets/branding/revlo-logo.png" alt="Revlo" class="h-9 w-auto" />
-          <span class="text-xs font-bold text-text-muted tracking-widest uppercase pt-1">CMS</span>
+          <span class="text-xs font-bold text-text-muted tracking-widest uppercase leading-none translate-y-[-3px]">CMS</span>
         </a>
       </div>
 
@@ -74,6 +74,27 @@ import { AuthService } from '../../services/auth.service';
           </svg>
           Kullanıcılar
         </a>
+
+        <a *ngIf="authService.isAdmin()"
+           routerLink="/collections"
+           routerLinkActive="bg-primary !text-white shadow-sm"
+           class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[15px] font-semibold text-text-primary hover:bg-primary-light transition-colors">
+          <svg class="w-6 h-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-19.5 0v6a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25v-6m-19.5 0h19.5M4.5 9.75V6a2.25 2.25 0 012.25-2.25h6l3 3h5.25a2.25 2.25 0 012.25 2.25v.75" />
+          </svg>
+          Koleksiyonlar
+        </a>
+
+        <a *ngIf="authService.isAdmin()"
+           routerLink="/tags"
+           routerLinkActive="bg-primary !text-white shadow-sm"
+           class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[15px] font-semibold text-text-primary hover:bg-primary-light transition-colors">
+          <svg class="w-6 h-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+          </svg>
+          Etiketler
+        </a>
       </nav>
 
       <!-- Boşluğu yukarı it, alt kısmı sabitle -->
@@ -83,7 +104,16 @@ import { AuthService } from '../../services/auth.service';
            genişlikte belirgin bir buton (öncekinden çok daha büyük/görünür) -->
       <div class="p-4 border-t border-border space-y-3">
         <a routerLink="/profile" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-bg transition-colors">
-          <div class="w-10 h-10 rounded-full bg-primary !text-white flex items-center justify-center font-bold text-base shrink-0">
+          <img
+            *ngIf="authService.avatarUrl()"
+            [src]="authService.avatarUrl()"
+            alt="Avatar"
+            class="w-10 h-10 rounded-full object-cover shrink-0"
+          />
+          <div
+            *ngIf="!authService.avatarUrl()"
+            class="w-10 h-10 rounded-full bg-primary !text-white flex items-center justify-center font-bold text-base shrink-0"
+          >
             {{ authService.username().substring(0, 1).toUpperCase() }}
           </div>
           <div class="flex-1 min-w-0">

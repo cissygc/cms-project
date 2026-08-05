@@ -53,16 +53,25 @@ import { CanComponentDeactivate } from "../../guards/post-editor.guard";
             id="title"
             name="title"
             class="form-input title-input"
-            [(ngModel)]="title"
+            [ngModel]="title"
+            (ngModelChange)="onTitleInput($event)"
             required
             placeholder="Örn: Oteller İçin Yapay Zeka Dönemi ve Dijital Dönüşüm"
           />
-          <p class="slug-preview" *ngIf="isEditMode">
-            /posts/{{ editingSlug }}
-          </p>
-          <p class="slug-preview" *ngIf="!isEditMode && title">
-            /posts/{{ slugify(title) }}
-          </p>
+
+          <label class="form-label-sm slug-label" for="slugInput">Yazı Adresi (URL)</label>
+          <div class="slug-edit-row">
+            <span class="slug-prefix">/posts/</span>
+            <input
+              type="text"
+              id="slugInput"
+              name="slugInput"
+              class="slug-input"
+              [ngModel]="slug"
+              (ngModelChange)="onSlugInput($event)"
+              placeholder="baslik-boyle-gorunecek"
+            />
+          </div>
         </div>
 
         <!-- İçerik -->
@@ -168,7 +177,7 @@ import { CanComponentDeactivate } from "../../guards/post-editor.guard";
               title="Link"
               (click)="insertLink()"
             >
-              🔗
+              Link
             </button>
 
             <!-- Quote -->
@@ -179,7 +188,7 @@ import { CanComponentDeactivate } from "../../guards/post-editor.guard";
               title="Alıntı"
               (click)="insertQuote()"
             >
-              ❝
+              "
             </button>
 
             <!-- Kod -->
@@ -213,7 +222,7 @@ import { CanComponentDeactivate } from "../../guards/post-editor.guard";
               class="tool-btn tool-btn-wide"
               (click)="openInlinePicker()"
             >
-              🖼 Görsel
+              Görsel
             </button>
           </div>
 
@@ -243,7 +252,7 @@ import { CanComponentDeactivate } from "../../guards/post-editor.guard";
             class="form-textarea main-textarea"
             [(ngModel)]="content"
             required
-            placeholder="Yazınızın detaylı içeriğini buraya yazabilirsiniz. Bir görsel eklemek için Ctrl+V ile yapıştırabilir ya da yukarıdaki 'Görsel Ekle' butonunu kullanabilirsiniz."
+            placeholder="Yazınızın detaylı içeriğini buraya yazabilirsiniz. Bir görsel eklemek için Ctrl+V ile yapıştırabilir ya da yukarıdaki 'Görsel' butonunu kullanabilirsiniz."
             rows="16"
             (paste)="onContentPaste($event)"
           ></textarea>
@@ -478,32 +487,76 @@ import { CanComponentDeactivate } from "../../guards/post-editor.guard";
 
         <!-- Kaydet -->
         <div class="save-actions">
+          <!-- Yeni yazı ya da hâlâ taslaktaysa: Yayınla / Taslak Olarak Kaydet -->
+          <ng-container *ngIf="!(isEditMode && wasPublished)">
+            <button
+              type="button"
+              class="btn btn-primary btn-block btn-lg"
+              [disabled]="isSaving || !title || !content"
+              (click)="saveAs('PUBLISHED')"
+            >
+              <span *ngIf="!(isSaving && pendingStatus === 'PUBLISHED')"
+                >Yayınla</span
+              >
+              <span *ngIf="isSaving && pendingStatus === 'PUBLISHED'"
+                >Yayınlanıyor...</span
+              >
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-block btn-lg"
+              [disabled]="isSaving || !title || !content"
+              (click)="saveAs('DRAFT')"
+            >
+              <span *ngIf="!(isSaving && pendingStatus === 'DRAFT')"
+                >Taslak Olarak Kaydet</span
+              >
+              <span *ngIf="isSaving && pendingStatus === 'DRAFT'"
+                >Kaydediliyor...</span
+              >
+            </button>
+          </ng-container>
+
+          <!-- Yazı zaten yayındaysa: Değişiklikleri Kaydet / Taslağa Geri Al -->
+          <ng-container *ngIf="isEditMode && wasPublished">
+            <button
+              type="button"
+              class="btn btn-primary btn-block btn-lg"
+              [disabled]="isSaving || !title || !content"
+              (click)="saveAs('PUBLISHED')"
+            >
+              <span *ngIf="!(isSaving && pendingStatus === 'PUBLISHED')"
+                >Değişiklikleri Kaydet</span
+              >
+              <span *ngIf="isSaving && pendingStatus === 'PUBLISHED'"
+                >Kaydediliyor...</span
+              >
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-block btn-lg"
+              [disabled]="isSaving || !title || !content"
+              (click)="saveAs('DRAFT')"
+            >
+              <span *ngIf="!(isSaving && pendingStatus === 'DRAFT')"
+                >Taslağa Geri Al</span
+              >
+              <span *ngIf="isSaving && pendingStatus === 'DRAFT'"
+                >Taslağa alınıyor...</span
+              >
+            </button>
+          </ng-container>
+
           <button
+            *ngIf="isEditMode"
             type="button"
-            class="btn btn-primary btn-block btn-lg"
-            [disabled]="isSaving || !title || !content"
-            (click)="saveAs('PUBLISHED')"
+            class="btn btn-danger btn-block btn-lg"
+            [disabled]="isSaving || isDeleting"
+            (click)="onDeletePost()"
           >
-            <span *ngIf="!(isSaving && pendingStatus === 'PUBLISHED')"
-              >Yayınla</span
-            >
-            <span *ngIf="isSaving && pendingStatus === 'PUBLISHED'"
-              >Yayınlanıyor...</span
-            >
+            {{ isDeleting ? "Siliniyor..." : "Yazıyı Sil" }}
           </button>
-          <button
-            type="button"
-            class="btn btn-secondary btn-block btn-lg"
-            [disabled]="isSaving || !title || !content"
-            (click)="saveAs('DRAFT')"
-          >
-            <span *ngIf="!(isSaving && pendingStatus === 'DRAFT')"
-              >Taslak Olarak Kaydet</span
-            >
-            <span *ngIf="isSaving && pendingStatus === 'DRAFT'"
-              >Kaydediliyor...</span
-            >
-          </button>
+
           <a routerLink="/posts" class="cancel-link">İptal</a>
         </div>
       </form>
@@ -633,6 +686,44 @@ import { CanComponentDeactivate } from "../../guards/post-editor.guard";
         color: #7c3aed;
         font-family: "JetBrains Mono", monospace;
       }
+      .slug-label {
+        margin-top: 16px;
+        margin-bottom: 6px !important;
+      }
+      .slug-edit-row {
+        display: flex;
+        align-items: stretch;
+        border: 1px solid #e8e3f2;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #f8f6fc;
+      }
+      .slug-prefix {
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #6b7280;
+        background: #f1f5f9;
+        border-right: 1px solid #e8e3f2;
+        font-family: "JetBrains Mono", monospace;
+        white-space: nowrap;
+      }
+      .slug-input {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        background: transparent;
+        padding: 10px 12px;
+        font-size: 13px;
+        font-family: "JetBrains Mono", monospace;
+        color: #111827;
+        outline: none;
+      }
+      .slug-input:focus {
+        background: #ffffff;
+      }
 
       /* Editör araç çubuğu - üstte tek satır, sekme geçişi altında ayrı satır */
       .editor-tools-row {
@@ -646,6 +737,11 @@ import { CanComponentDeactivate } from "../../guards/post-editor.guard";
         border-top-right-radius: var(--radius-md);
         border: 1px solid #e8e3f2;
         border-bottom: none;
+      }
+      .tool-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
       }
       .tool-btn {
         min-width: 34px;
@@ -841,7 +937,10 @@ import { CanComponentDeactivate } from "../../guards/post-editor.guard";
 
       /* Kapak */
       .cover-preview-box {
+        display: flex;
+        flex-direction: column;
         align-items: center;
+        gap: 10px;
       }
 
       .cover-image-display {
@@ -1045,6 +1144,12 @@ export class PostEditorComponent
   content = "";
   activeTab: "edit" | "preview" = "edit";
 
+  // URL adresi (slug) - başlıktan otomatik üretilir ama kullanıcı elle
+  // değiştirebilir. Bir kez elle değiştirdikten sonra başlık değişse bile
+  // artık otomatik güncellenmez (slugTouched).
+  slug = "";
+  private slugTouched = false;
+
   // Yayın
   status: PostStatus = "DRAFT";
   pendingStatus: PostStatus | null = null;
@@ -1053,11 +1158,10 @@ export class PostEditorComponent
 
   // Kapak
   coverMediaId: number | null = null;
+  private coverRemoved = false;
   coverUrl = "";
 
   // İçerik içine eklenen görsellerin url -> mediaId eşlemesi.
-  // Kaydederken içerik metnini tarayıp ![alt](url) biçimindeki her görseli
-  // bu haritadan mediaId'ye çevirip backend'in beklediği media[] dizisini oluşturuyoruz.
   private imageUrlToMediaId = new Map<string, number>();
 
   // Koleksiyon & etiket
@@ -1078,6 +1182,8 @@ export class PostEditorComponent
   isEditMode = false;
   editingSlug = "";
   isSaving = false;
+  isDeleting = false;
+  wasPublished = false;
   isCoverPickerOpen = false;
   isInlinePickerOpen = false;
 
@@ -1129,9 +1235,12 @@ export class PostEditorComponent
     this.postService.getPost(slug).subscribe({
       next: (post) => {
         this.title = post.title;
+        this.slug = post.slug;
+        this.slugTouched = true;
         this.content = post.content || "";
         this.coverUrl = post.image || "";
         this.status = post.status;
+        this.wasPublished = post.status === "PUBLISHED";
         this.language = post.language;
         this.publishAtLocal = this.toDatetimeLocal(post.publishAt);
         this.selectedCollectionIds = new Set(
@@ -1139,9 +1248,6 @@ export class PostEditorComponent
         );
         this.selectedTagNames = (post.tags || []).map((t) => t.name);
 
-        // Mevcut içerik-içi görsellerin url -> mediaId eşlemesini geri kur,
-        // aksi halde tekrar kaydedince content'te duran görseller media[]
-        // dizisine dahil edilemez.
         this.imageUrlToMediaId = new Map(
           (post.media || []).map((m) => [m.url, m.mediaId]),
         );
@@ -1178,12 +1284,38 @@ export class PostEditorComponent
       .replace(/(^-|-$)/g, "");
   }
 
+  onTitleInput(value: string): void {
+    this.title = value;
+    // Kullanıcı slug'ı elle değiştirmediyse başlıktan otomatik türetmeye devam et.
+    if (!this.slugTouched) {
+      this.slug = this.slugify(value);
+    }
+    this.markDirty();
+  }
+
+  // Slug her zaman "/posts/" ile başlar ama bu ÖNEK asla düzenlenebilir
+  // alana dahil değil - kullanıcı sadece kendi kısmını yazıyor. Burada da
+  // olur da "/" veya boşluk gibi geçersiz karakterler yapıştırılırsa temizliyoruz,
+  // aksi halde "/posts//posts/..." gibi bozuk bir slug'a yol açabilir.
+  onSlugInput(value: string): void {
+    this.slugTouched = true;
+    this.slug = (value || "")
+      .toLowerCase()
+      .replace(/^\/+/, "")
+      .replace(/posts\//g, "")
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/-+/g, "-");
+    this.markDirty();
+  }
+
   // ── Metin editörü araçları ────────────────────────────────────────
 
+  private getTextarea(): HTMLTextAreaElement | null {
+    return document.getElementById("contentEditor") as HTMLTextAreaElement | null;
+  }
+
   insertText(before: string, after: string): void {
-    const textarea = document.getElementById(
-      "contentEditor",
-    ) as HTMLTextAreaElement;
+    const textarea = this.getTextarea();
     if (!textarea) return;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -1194,18 +1326,51 @@ export class PostEditorComponent
       replacement +
       this.content.substring(end);
     this.markDirty();
-    setTimeout(() => textarea.focus());
+    const newPos = start + replacement.length;
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+    });
+  }
+
+  // Satır başına ek gerektiren blok elemanları (satır ortasına eklenirse
+  // "# Başlık" gibi kalıplar geçersiz sayılır, bu yüzden mutlaka kendi
+  // satırında olmalı) için ortak yardımcı.
+  private insertBlockLine(prefix: string): void {
+    const textarea = this.getTextarea();
+    if (!textarea) {
+      this.content += `\n${prefix}\n`;
+      this.markDirty();
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const needsLeadingNewline = start > 0 && this.content[start - 1] !== "\n";
+    const snippet = `${needsLeadingNewline ? "\n" : ""}${prefix}\n`;
+    this.content =
+      this.content.substring(0, start) + snippet + this.content.substring(end);
+    const newPos = start + snippet.length;
+    this.markDirty();
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+    });
   }
 
   insertCodeBlock(): void {
     this.insertText("```\n", "\n```");
   }
+
   insertHeading3(): void {
     this.insertText("### ", "");
   }
 
+  // Altı çizili için ham <u> HTML etiketi eklemek yerine markdown benzeri
+  // __metin__ söz dizimi kullanılıyor - önizleme motoru güvenlik amacıyla
+  // tüm metni HTML-escape ettiğinden ham <u> etiketleri escape'lenip
+  // görünmez hale gelirdi ve altı çizili hiç çalışmazdı.
   insertUnderline(): void {
-    this.insertText("<u>", "</u>");
+    this.insertText("__", "__");
   }
 
   insertStrike(): void {
@@ -1217,112 +1382,85 @@ export class PostEditorComponent
   }
 
   insertHorizontalRule(): void {
-    const textarea = document.getElementById(
-      "contentEditor",
-    ) as HTMLTextAreaElement;
-
-    const separator = "\n\n---\n\n";
-
-    if (!textarea) {
-      this.content += separator;
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-
-    this.content =
-      this.content.substring(0, start) +
-      separator +
-      this.content.substring(end);
-
-    const pos = start + separator.length;
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(pos, pos);
-    });
-
-    this.markDirty();
+    this.insertBlockLine("---");
   }
 
+  // Seçili metnin HER satırını "- " ile başlatır ve bloğu kendi satırlarına
+  // yerleştirir - aksi halde liste satır başında olmadığından render
+  // edilmez ve tüm liste tek satıra sıkışır.
   insertBulletList(): void {
-    const textarea = document.getElementById(
-      "contentEditor",
-    ) as HTMLTextAreaElement;
-
+    const textarea = this.getTextarea();
     if (!textarea) return;
-
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-
     const selected = this.content.substring(start, end) || "Liste öğesi";
-
     const lines = selected
       .split("\n")
       .map((x) => `- ${x}`)
       .join("\n");
-
+    const needsLeadingNewline = start > 0 && this.content[start - 1] !== "\n";
+    const snippet = `${needsLeadingNewline ? "\n" : ""}${lines}\n`;
     this.content =
-      this.content.substring(0, start) + lines + this.content.substring(end);
-
+      this.content.substring(0, start) + snippet + this.content.substring(end);
+    const newPos = start + snippet.length;
     this.markDirty();
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+    });
   }
 
   insertNumberList(): void {
-    const textarea = document.getElementById(
-      "contentEditor",
-    ) as HTMLTextAreaElement;
-
+    const textarea = this.getTextarea();
     if (!textarea) return;
-
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-
     const selected = this.content.substring(start, end) || "Liste öğesi";
-
     const lines = selected
       .split("\n")
       .map((x, i) => `${i + 1}. ${x}`)
       .join("\n");
-
+    const needsLeadingNewline = start > 0 && this.content[start - 1] !== "\n";
+    const snippet = `${needsLeadingNewline ? "\n" : ""}${lines}\n`;
     this.content =
-      this.content.substring(0, start) + lines + this.content.substring(end);
-
+      this.content.substring(0, start) + snippet + this.content.substring(end);
+    const newPos = start + snippet.length;
     this.markDirty();
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+    });
   }
 
   insertLink(): void {
-    const textarea = document.getElementById(
-      "contentEditor",
-    ) as HTMLTextAreaElement;
-
+    const textarea = this.getTextarea();
     if (!textarea) return;
-
     const selected =
       this.content.substring(textarea.selectionStart, textarea.selectionEnd) ||
       "Link";
-
-    const url = prompt("URL");
-
-    if (!url) return;
-
+    const rawUrl = prompt("URL");
+    if (!rawUrl) return;
+    // "http(s)://" veya "mailto:" gibi bir şema yoksa tarayıcı bunu GÖRECELİ
+    // bir yol sayıp linke tıklandığında uygulamanın kendi içinde (örn. anasayfaya)
+    // yönlendirebiliyor. Şema eksikse otomatik https:// ekliyoruz.
+    const url = /^[a-z][a-z0-9+.-]*:/i.test(rawUrl.trim()) ? rawUrl.trim() : `https://${rawUrl.trim()}`;
     const markdown = `[${selected}](${url})`;
-
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
     this.content =
-      this.content.substring(0, textarea.selectionStart) +
-      markdown +
-      this.content.substring(textarea.selectionEnd);
-
+      this.content.substring(0, start) + markdown + this.content.substring(end);
     this.markDirty();
+    const newPos = start + markdown.length;
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+    });
   }
 
   // Görseli her zaman kendi satırına, imlecin bulunduğu yere ekler -
   // böylece "yaz, görsel yapıştır, altından yazmaya devam et" akışı çalışır.
   private insertImageAtCursor(url: string, mediaId: number, alt: string): void {
-    const textarea = document.getElementById(
-      "contentEditor",
-    ) as HTMLTextAreaElement;
+    const textarea = this.getTextarea();
     const snippet = `\n![${alt}](${url})\n`;
 
     if (textarea) {
@@ -1396,10 +1534,11 @@ export class PostEditorComponent
     return Math.max(1, Math.round(words / 200));
   }
 
-  // Basit markdown -> HTML dönüştürücü. Sadece toolbar'ın ürettiği
-  // sözdizimini destekler: **kalın**, *italik*, # / ## başlık, > alıntı,
-  // ``` kod bloğu, ![alt](url) görsel. Amaç tam bir markdown motoru değil,
-  // canlı önizlemenin editördeki biçimlendirmeyi doğru yansıtması.
+  // Basit markdown -> HTML dönüştürücü. Toolbar'ın ürettiği tüm
+  // sözdizimini destekler: **kalın**, *italik*, __altı çizili__, ~~üstü
+  // çizili~~, # / ## / ### başlık, > alıntı, ``` kod bloğu, ![alt](url)
+  // görsel, [metin](url) link, - madde listesi, 1. numaralı liste, ---
+  // yatay çizgi.
   private renderMarkdown(raw: string): string {
     const codeBlocks: string[] = [];
     let text = raw.replace(/```([\s\S]*?)```/g, (_m, code) => {
@@ -1434,11 +1573,13 @@ export class PostEditorComponent
             line.replace(/^&gt;\s+/, ""),
           )}</blockquote>`;
 
+        // Madde ve numaralı liste satırları ayrı işaretlerle çıkarılıyor
+        // ki aşağıda <ul> ile <ol> birbirine karıştırılmadan gruplanabilsin.
         if (/^-\s+/.test(line))
-          return `<li>${this.inlineFormat(line.replace(/^-\s+/, ""))}</li>`;
+          return `<li class="li-b">${this.inlineFormat(line.replace(/^-\s+/, ""))}</li>`;
 
         if (/^\d+\.\s+/.test(line))
-          return `<li>${this.inlineFormat(line.replace(/^\d+\.\s+/, ""))}</li>`;
+          return `<li class="li-n">${this.inlineFormat(line.replace(/^\d+\.\s+/, ""))}</li>`;
 
         if (/^<img /.test(line.trim())) return line;
 
@@ -1450,7 +1591,17 @@ export class PostEditorComponent
 
     let output = html;
 
-    output = output.replace(/(<li>.*?<\/li>)+/gs, (m) => `<ul>${m}</ul>`);
+    // Ardışık numaralı liste satırlarını <ol>, ardışık madde satırlarını
+    // <ul> içine al. Sınıf işaretçileri farklı olduğu için iki liste türü
+    // birbirine karışmaz.
+    output = output.replace(
+      /(<li class="li-n">.*?<\/li>)+/gs,
+      (m) => `<ol>${m.replace(/ class="li-n"/g, "")}</ol>`,
+    );
+    output = output.replace(
+      /(<li class="li-b">.*?<\/li>)+/gs,
+      (m) => `<ul>${m.replace(/ class="li-b"/g, "")}</ul>`,
+    );
 
     return output.replace(
       /@@CODEBLOCK(\d+)@@/g,
@@ -1468,23 +1619,19 @@ export class PostEditorComponent
   private inlineFormat(s: string): string {
     return (
       s
-
-        // Bold
+        // Kalın
         .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-
-        // Italic
+        // İtalik
         .replace(/\*(.*?)\*/g, "<em>$1</em>")
-
-        // Underline
-        .replace(/<u>(.*?)<\/u>/g, "<u>$1</u>")
-
-        // Strike
+        // Altı çizili
+        .replace(/__(.*?)__/g, "<u>$1</u>")
+        // Üstü çizili
         .replace(/~~(.*?)~~/g, "<del>$1</del>")
-
         // Link
         .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
     );
   }
+
   // ── Kapak görseli ─────────────────────────────────────────────────
 
   openCoverPicker(): void {
@@ -1496,6 +1643,7 @@ export class PostEditorComponent
     if (!item) return;
     this.coverMediaId = Number(item.id);
     this.coverUrl = item.url;
+    this.coverRemoved = false;
     this.isCoverPickerOpen = false;
     this.markDirty();
   }
@@ -1503,6 +1651,9 @@ export class PostEditorComponent
   clearCover(): void {
     this.coverMediaId = null;
     this.coverUrl = "";
+    // Backend "gönderilmezse dokunma" mantığında - kapağı bilerek kaldırdığımızı
+    // ayrıca belirtmezsek (removeCover), kaydedince eski kapak korunur.
+    this.coverRemoved = true;
     this.markDirty();
   }
 
@@ -1553,16 +1704,17 @@ export class PostEditorComponent
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  // ÖNEMLİ: backend "publishAt" alanını LocalDateTime olarak bekliyor -
+  // yani saat dilimi (timezone) bilgisi OLMAYAN bir tarih-saat. toISOString()
+  // kullanırsak hem UTC'ye çeviriyor hem sona "Z" ekliyor, bu da backend'de
+  // deserialization hatasına (ve 500'e) yol açıyor. datetime-local inputu
+  // zaten "YYYY-MM-DDTHH:mm" formatında, kullanıcının seçtiği saati OLDUĞU
+  // GİBİ (dönüştürmeden) gönderiyoruz, sadece saniye ekliyoruz.
   private fromDatetimeLocal(local: string): string | undefined {
     if (!local) return undefined;
-    const d = new Date(local);
-    if (isNaN(d.getTime())) return undefined;
-    return d.toISOString();
+    return local.length === 16 ? `${local}:00` : local;
   }
 
-  // İçerik metnindeki ![alt](url) görsellerini sırayla tarayıp, daha önce
-  // eklenirken kaydettiğimiz url -> mediaId eşlemesinden backend'in
-  // beklediği media[] dizisini üretir.
   private extractContentMedia(): { mediaId: number; caption?: string }[] {
     const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
     const result: { mediaId: number; caption?: string }[] = [];
@@ -1577,9 +1729,7 @@ export class PostEditorComponent
   }
 
   private buildPayload(): PostPayload {
-    const computedSlug = this.isEditMode
-      ? this.editingSlug
-      : this.slugify(this.title);
+    const computedSlug = this.slug.trim() || this.slugify(this.title);
 
     const payload: PostPayload = {
       slug: computedSlug,
@@ -1602,7 +1752,11 @@ export class PostEditorComponent
 
     if (this.coverMediaId !== null) {
       payload.coverMediaId = this.coverMediaId;
+    } else if (this.coverRemoved) {
+      payload.removeCover = true;
     }
+    // İkisi de değilse (kapak hiç değiştirilmediyse) alan boş bırakılıyor -
+    // backend mevcut kapağı olduğu gibi korur.
 
     return payload;
   }
@@ -1618,6 +1772,7 @@ export class PostEditorComponent
 
   saveAs(status: PostStatus): void {
     if (!this.title || !this.content) return;
+    const wasPublishedBefore = this.wasPublished;
     this.status = status;
     this.pendingStatus = status;
     this.isSaving = true;
@@ -1627,15 +1782,42 @@ export class PostEditorComponent
         this.isSaving = false;
         this.pendingStatus = null;
         this.hasUnsavedChanges = false;
-        this.toastService.success(
-          status === "PUBLISHED" ? "Yazı yayınlandı." : "Taslak kaydedildi.",
-        );
+        this.wasPublished = status === "PUBLISHED";
+
+        let message = "Taslak kaydedildi.";
+        if (status === "PUBLISHED" && wasPublishedBefore) message = "Değişiklikler kaydedildi.";
+        else if (status === "PUBLISHED") message = "Yazı yayınlandı.";
+        else if (wasPublishedBefore) message = "Yazı taslağa alındı.";
+        this.toastService.success(message);
+
         this.router.navigate(["/posts"]);
       },
       error: (err) => {
         this.isSaving = false;
         this.pendingStatus = null;
         this.toastService.error(err.message || "Kayıt başarısız.");
+      },
+    });
+  }
+
+  // Editörden doğrudan silme - "Yazıyı Sil" butonu (sadece düzenleme modunda görünür).
+  onDeletePost(): void {
+    if (!this.isEditMode) return;
+    if (!confirm(`"${this.title}" yazısını silmek istediğinize emin misiniz?`)) return;
+
+    this.isDeleting = true;
+    this.postService.deletePost(this.editingSlug).subscribe({
+      next: () => {
+        this.isDeleting = false;
+        // Kaydedilmemiş değişiklik olsa bile artık post silindiği için
+        // çıkış onayı modalını gösterip kullanıcıyı yanlış yönlendirmeyelim.
+        this.hasUnsavedChanges = false;
+        this.toastService.success("Yazı silindi.");
+        this.router.navigate(["/posts"]);
+      },
+      error: (err) => {
+        this.isDeleting = false;
+        this.toastService.error(err.message || "Yazı silinemedi.");
       },
     });
   }
@@ -1669,7 +1851,6 @@ export class PostEditorComponent
         this.toastService.error(
           err.message || "Kayıt başarısız, sayfada kalındı.",
         );
-        // Kayıt başarısızsa sayfadan çıkılmasın, kullanıcı tekrar denesin.
       },
     });
   }
