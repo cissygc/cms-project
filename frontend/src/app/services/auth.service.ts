@@ -5,6 +5,7 @@ import { Observable, tap, catchError, throwError } from 'rxjs';
 import { AuthResponse, LoginPayload } from '../models/user.model';
 import { API_CONFIG } from '../config';
 import { ToastService } from './toast.service';
+import { UserService } from './user.service';
 
 
 @Injectable({
@@ -14,13 +15,42 @@ export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
   private toastService = inject(ToastService);
+  private userService = inject(UserService);
 
   private currentUserSignal = signal<AuthResponse | null>(this.getStoredUser());
+
+  // Profil fotoğrafı AuthResponse'un (login yanıtının) bir parçası değil -
+  // ayrı bir /api/users/me çağrısıyla geliyor. Sidebar'ın ve profilin aynı
+  // anda güncel kalması için burada tek bir paylaşılan signal tutuyoruz.
+  private avatarUrlSignal = signal<string>('');
+  readonly avatarUrl = this.avatarUrlSignal.asReadonly();
+
+  setAvatarUrl(url: string): void {
+    this.avatarUrlSignal.set(url);
+  }
 
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly isLoggedIn = computed(() => !!this.currentUserSignal()?.token);
   readonly isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
   readonly username = computed(() => this.currentUserSignal()?.username || '');
+
+  constructor() {
+    // Sayfa yenilendiğinde (oturum localStorage'dan geri yükleniyor) sidebar
+    // component'i YENİDEN OLUŞTURULMUYOR olabilir (SPA navigasyonunda aynı
+    // instance kalabilir), bu yüzden avatarı burada - servis oluşturulur
+    // oluşturulmaz - bir kez çekiyoruz. Giriş anında da login() içinde ayrıca
+    // çekiliyor (bkz. aşağı).
+    if (this.isLoggedIn()) {
+      this.fetchAndSetAvatar();
+    }
+  }
+
+  private fetchAndSetAvatar(): void {
+    this.userService.getMyProfile().subscribe({
+      next: (user) => this.avatarUrlSignal.set(user.avatarUrl || ''),
+      error: () => {},
+    });
+  }
 
   getStoredUser(): AuthResponse | null {
     try {
@@ -52,6 +82,7 @@ export class AuthService {
           };
           this.currentUserSignal.set(session);
           localStorage.setItem(API_CONFIG.storageKey, JSON.stringify(session));
+          this.fetchAndSetAvatar();
           this.toastService.success(`Hoş geldin, ${session.username}!`);
           this.router.navigate(['/dashboard']);
         }),
@@ -68,6 +99,7 @@ export class AuthService {
 
   logout(): void {
     this.currentUserSignal.set(null);
+    this.avatarUrlSignal.set('');
     localStorage.removeItem(API_CONFIG.storageKey);
     this.toastService.info('Oturum kapatıldı.');
     this.router.navigate(['/login']);

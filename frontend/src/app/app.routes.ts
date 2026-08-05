@@ -44,6 +44,26 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'profile',
+    loadComponent: () =>
+      import('./pages/profile/profile.component').then((m) => m.ProfileComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'collections',
+    loadComponent: () =>
+      import('./pages/collections-list/collections-list.component').then(
+        (m) => m.CollectionsListComponent
+      ),
+    canActivate: [authGuard, adminGuard],
+  },
+  {
+    path: 'tags',
+    loadComponent: () =>
+      import('./pages/tags-list/tags-list.component').then((m) => m.TagsListComponent),
+    canActivate: [authGuard, adminGuard],
+  },
+  {
     path: 'users',
     loadComponent: () =>
       import('./pages/users-list/users-list.component').then((m) => m.UsersListComponent),

@@ -27,6 +27,7 @@ import com.example.repository.UserRepository;
 import com.example.service.IPostService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.ArrayList;
@@ -35,7 +36,19 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+// SINIF SEVİYESİNDE @Transactional: updatePost (ve diğer metodlar) bir post'u
+// yükleyip (postRepository.findBySlug) değiştirip kaydettikten SONRA onu
+// mapToDto ile DTO'ya çeviriyor. Post'un author/collections/tags/media gibi
+// ilişkileri FetchType.LAZY - eğer her repository çağrısı (findBySlug, save,
+// vs.) kendi ayrı mini-transaction'ında çalışıp hemen kapanırsa, mapToDto
+// çalıştığı anda Hibernate session'ı çoktan kapanmış olur ve post.getAuthor()
+// gibi hâlâ yüklenmemiş (lazy proxy) bir alana erişmeye çalışmak
+// LazyInitializationException fırlatır - bu da GlobalExceptionHandler'ın genel
+// Exception handler'ına düşüp kullanıcıya belirsiz bir 500 olarak dönüyordu.
+// @Transactional, tüm metodun (find -> değiştir -> kaydet -> DTO'ya çevir)
+// TEK bir session içinde çalışmasını sağlayıp bu sorunu çözüyor.
 @Service
+@Transactional
 public class PostServiceImpl implements IPostService {
 
     private final PostRepository postRepository;
@@ -82,7 +95,15 @@ public class PostServiceImpl implements IPostService {
         post.setLanguage(parseLanguage(postRequestDto.getLanguage(), Language.TR));
         post.setCollections(resolveCollections(postRequestDto.getCollectionIds()));
         post.setTags(resolveTags(postRequestDto.getTagNames()));
-        post.setMedia(resolveMedia(post, postRequestDto.getMedia()));
+        // NOT: post.setMedia(yeniListe) YERİNE mevcut koleksiyonu temizleyip yeniden
+        // dolduruyoruz. "media" ilişkisi orphanRemoval=true + mappedBy ile tanımlı -
+        // koleksiyonun kendisini YENİ bir liste nesnesiyle değiştirmek (setMedia),
+        // Hibernate'in "A collection with cascade=all-delete-orphan was no longer
+        // referenced by the owning entity instance" hatasını fırlatmasına yol açıyordu
+        // (bu da yakalanamayıp genel 500 hatasına dönüşüyordu). clear()+addAll() ile
+        // AYNI koleksiyon nesnesi korunuyor, Hibernate değişiklikleri düzgün izleyebiliyor.
+        post.getMedia().clear();
+        post.getMedia().addAll(resolveMedia(post, postRequestDto.getMedia()));
         applySeo(post, postRequestDto.getSeo());
         post.setPublishAt(postRequestDto.getPublishAt());
         if (post.getStatus() == PostStatus.PUBLISHED) {
@@ -259,7 +280,15 @@ public class PostServiceImpl implements IPostService {
         post.setSlug(postRequestDto.getSlug());
         post.setTitle(postRequestDto.getTitle());
         post.setContent(postRequestDto.getContent());
-        post.setCoverMedia(resolveCoverMedia(postRequestDto.getCoverMediaId()));
+        // NOT: collectionIds/tagNames/media ile AYNI "gönderilmezse dokunma" mantığı -
+        // coverMediaId gönderilmezse VE removeCover=true değilse mevcut kapak korunur.
+        // Önceden bu koşulsuzdu, yani kapak SEÇMEDEN yapılan her güncelleme (örn. sadece
+        // durumu PUBLISHED'e çekmek için "Yayınla") mevcut kapağı sessizce siliyordu.
+        if (postRequestDto.getCoverMediaId() != null) {
+            post.setCoverMedia(resolveCoverMedia(postRequestDto.getCoverMediaId()));
+        } else if (postRequestDto.isRemoveCover()) {
+            post.setCoverMedia(null);
+        }
         post.setStatus(parseStatus(postRequestDto.getStatus(), post.getStatus()));
         post.setLanguage(parseLanguage(postRequestDto.getLanguage(), post.getLanguage()));
         // NOT: collectionIds hiç gönderilmezse (null) mevcut atamalar korunur;
@@ -274,8 +303,15 @@ public class PostServiceImpl implements IPostService {
         }
         // Aynı null-vs-boş-liste mantığı: media hiç gönderilmezse mevcut görseller
         // korunur, boş [] gönderilirse post bilerek tüm içerik görsellerinden çıkarılır.
+        // NOT: post.setMedia(yeniListe) YERİNE mevcut koleksiyon temizlenip yeniden
+        // dolduruluyor - orphanRemoval=true + mappedBy ilişkilerde koleksiyonun
+        // kendisini yeni bir nesneyle değiştirmek Hibernate'in "collection was no
+        // longer referenced" hatasını fırlatmasına yol açıyordu (her güncellemede
+        // 500 hatası veriyordu, çünkü frontend media alanını her zaman - boş bile
+        // olsa - gönderiyor).
         if (postRequestDto.getMedia() != null) {
-            post.setMedia(resolveMedia(post, postRequestDto.getMedia()));
+            post.getMedia().clear();
+            post.getMedia().addAll(resolveMedia(post, postRequestDto.getMedia()));
         }
         applySeo(post, postRequestDto.getSeo());
         // Diğer basit alanlar (slug/title/image/content) gibi doğrudan üzerine yazılıyor -
