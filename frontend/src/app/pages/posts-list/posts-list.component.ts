@@ -1,384 +1,402 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PostService } from '../../services/post.service';
+import { CollectionService } from '../../services/collection.service';
+import { TagService } from '../../services/tag.service';
+import { UserService } from '../../services/user.service';
+import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
-import { Post } from '../../models/post.model';
+import { BadgeComponent, BadgeTone } from '../../components/badge/badge.component';
+import { Post, PostStatus, Language, CollectionSummary, TagSummary, PostPayload } from '../../models/post.model';
+
+type SortKey = 'date-desc' | 'date-asc' | 'title-asc' | 'title-desc';
+
+const PAGE_STEP = 5;
 
 @Component({
   selector: 'app-posts-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, BadgeComponent],
   template: `
-    <div class="container">
-      <div class="page-header">
-        <div>
-          <span class="collection-badge">📁 YAZI KOLEKSİYONU</span>
-          <h1 class="page-title">Yazı Koleksiyonu</h1>
-          <p class="section-sub">Sistemdeki tüm blog ve içerik kayıtlarını yönetin</p>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-extrabold text-text-primary">Yazılar</h1>
+        <p class="text-text-muted text-sm mt-1">Sistemdeki tüm blog yazılarını yönet</p>
+      </div>
+      <a
+        routerLink="/posts/new"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary !text-white text-sm font-bold hover:bg-primary-dark transition-colors shrink-0"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Yeni Yazı
+      </a>
+    </div>
+
+    <!-- Üst bar: arama + filtreler butonu + sıralama + görünüm -->
+    <div class="bg-surface border border-border rounded-2xl p-4 mb-4">
+      <div class="flex items-center gap-3 flex-wrap">
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Başlık, URL adresi veya etiket ile ara..."
+          class="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        />
+
+        <button
+          type="button"
+          (click)="filtersOpen = !filtersOpen"
+          class="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold transition-colors"
+          [class.border-primary]="filtersOpen || activeFilterCount > 0"
+          [class.text-primary]="filtersOpen || activeFilterCount > 0"
+          [class.border-border]="!(filtersOpen || activeFilterCount > 0)"
+          [class.text-text-primary]="!(filtersOpen || activeFilterCount > 0)"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+          </svg>
+          Filtreler
+          <span *ngIf="activeFilterCount > 0" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary !text-white text-[11px] font-bold">
+            {{ activeFilterCount }}
+          </span>
+        </button>
+
+        <select
+          [(ngModel)]="sortKey"
+          class="px-3 py-2.5 rounded-xl border border-border bg-bg text-xs font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        >
+          <option value="date-desc">Tarih (yeni &rarr; eski)</option>
+          <option value="date-asc">Tarih (eski &rarr; yeni)</option>
+          <option value="title-asc">İsim (A &rarr; Z)</option>
+          <option value="title-desc">İsim (Z &rarr; A)</option>
+        </select>
+
+        <div class="inline-flex gap-1 bg-bg p-1 rounded-xl border border-border">
+          <button
+            type="button"
+            (click)="viewMode = 'grid'"
+            [class.bg-primary]="viewMode === 'grid'"
+            [class.text-white]="viewMode === 'grid'"
+            class="px-4 py-1.5 rounded-lg text-xs font-bold text-text-muted transition-colors"
+          >
+            Kart
+          </button>
+          <button
+            type="button"
+            (click)="viewMode = 'table'"
+            [class.bg-primary]="viewMode === 'table'"
+            [class.text-white]="viewMode === 'table'"
+            class="px-4 py-1.5 rounded-lg text-xs font-bold text-text-muted transition-colors"
+          >
+            Tablo
+          </button>
         </div>
-        <a routerLink="/posts/new" class="btn btn-primary">+ Yeni Yazı Ekle</a>
       </div>
 
-      <!-- Search & View Mode Bar -->
-      <div class="glass-card filter-card">
-        <div class="filter-row">
-          <!-- Search Bar -->
-          <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input
-              type="text"
-              class="form-input search-input"
-              placeholder="Başlık veya URL adresi ile ara..."
-              [(ngModel)]="searchQuery"
-            />
+      <!-- Açılır filtre paneli - üst bardan aşağı doğru açılır, listenin ÜSTÜNDE durur -->
+      <div *ngIf="filtersOpen" class="mt-4 pt-4 border-t border-border">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-xs font-bold text-text-muted uppercase tracking-wide">Filtrele</span>
+          <button
+            *ngIf="activeFilterCount > 0"
+            type="button"
+            (click)="clearAllFilters()"
+            class="text-xs font-bold text-primary hover:underline"
+          >
+            Tümünü temizle ({{ activeFilterCount }})
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+          <!-- Durum -->
+          <div>
+            <div class="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">Durum</div>
+            <label class="flex items-center gap-2.5 py-1 cursor-pointer">
+              <input type="checkbox" [checked]="statusSet.has('PUBLISHED')" (change)="toggleSet(statusSet, 'PUBLISHED')" class="rounded border-border accent-primary" />
+              <span class="text-sm text-text-primary">Yayında</span>
+            </label>
+            <label class="flex items-center gap-2.5 py-1 cursor-pointer">
+              <input type="checkbox" [checked]="statusSet.has('DRAFT')" (change)="toggleSet(statusSet, 'DRAFT')" class="rounded border-border accent-primary" />
+              <span class="text-sm text-text-primary">Taslak</span>
+            </label>
+            <label class="flex items-center gap-2.5 py-1 cursor-pointer">
+              <input type="checkbox" [checked]="statusSet.has('SCHEDULED')" (change)="toggleSet(statusSet, 'SCHEDULED')" class="rounded border-border accent-primary" />
+              <span class="text-sm text-text-primary">Zamanlanmış</span>
+            </label>
           </div>
 
-          <!-- View Mode Toggle -->
-          <div class="view-mode-toggle">
+          <!-- Dil -->
+          <div>
+            <div class="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">Dil</div>
+            <label *ngFor="let l of languageOptions" class="flex items-center gap-2.5 py-1 cursor-pointer">
+              <input type="checkbox" [checked]="languageSet.has(l.value)" (change)="toggleSet(languageSet, l.value)" class="rounded border-border accent-primary" />
+              <span class="text-sm text-text-primary">{{ l.label }}</span>
+            </label>
+          </div>
+
+          <!-- Koleksiyon -->
+          <div *ngIf="collections.length > 0">
+            <div class="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">Koleksiyon</div>
+            <label *ngFor="let c of collections.slice(0, collectionShowCount)" class="flex items-center gap-2.5 py-1 cursor-pointer">
+              <input type="checkbox" [checked]="collectionSet.has(c.name)" (change)="toggleSet(collectionSet, c.name)" class="rounded border-border accent-primary" />
+              <span class="text-sm text-text-primary truncate">{{ c.name }}</span>
+            </label>
             <button
+              *ngIf="collections.length > collectionShowCount"
               type="button"
-              class="mode-btn"
-              [class.active]="viewMode === 'grid'"
-              (click)="viewMode = 'grid'"
-              title="Kart Görünümü"
+              (click)="collectionShowCount = collectionShowCount + 5"
+              class="text-xs font-bold text-primary hover:underline mt-1"
             >
-              🎴 Kart
+              {{ collections.length - collectionShowCount }} tane daha göster
             </button>
+          </div>
+
+          <!-- Etiket -->
+          <div *ngIf="tags.length > 0">
+            <div class="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">Etiket</div>
+            <label *ngFor="let t of tags.slice(0, tagShowCount)" class="flex items-center gap-2.5 py-1 cursor-pointer">
+              <input type="checkbox" [checked]="tagSet.has(t.name)" (change)="toggleSet(tagSet, t.name)" class="rounded border-border accent-primary" />
+              <span class="text-sm text-text-primary truncate">{{ t.name }}</span>
+            </label>
             <button
+              *ngIf="tags.length > tagShowCount"
               type="button"
-              class="mode-btn"
-              [class.active]="viewMode === 'table'"
-              (click)="viewMode = 'table'"
-              title="Tablo Görünümü"
+              (click)="tagShowCount = tagShowCount + 5"
+              class="text-xs font-bold text-primary hover:underline mt-1"
             >
-              📊 Tablo
+              {{ tags.length - tagShowCount }} tane daha göster
+            </button>
+          </div>
+
+          <!-- Yazar - sadece admin görür -->
+          <div *ngIf="authService.isAdmin() && authorOptions.length > 0">
+            <div class="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">Yazar</div>
+            <label *ngFor="let a of authorOptions.slice(0, authorShowCount)" class="flex items-center gap-2.5 py-1 cursor-pointer">
+              <input type="checkbox" [checked]="authorSet.has(a.username)" (change)="toggleSet(authorSet, a.username)" class="rounded border-border accent-primary" />
+              <span class="text-sm text-text-primary truncate">{{ a.label }}</span>
+            </label>
+            <button
+              *ngIf="authorOptions.length > authorShowCount"
+              type="button"
+              (click)="authorShowCount = authorShowCount + 5"
+              class="text-xs font-bold text-primary hover:underline mt-1"
+            >
+              {{ authorOptions.length - authorShowCount }} tane daha göster
             </button>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Main Collection Container -->
-      <div class="glass-card main-card">
-        <div *ngIf="isLoading" class="loading-state">
-          <div class="spinner"></div>
-          <span>Kayıtlar taranıyor...</span>
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-sm text-text-muted">{{ filteredPosts.length }} yazı</span>
+    </div>
+
+    <div *ngIf="isLoading" class="text-center py-16 text-text-muted">Yükleniyor...</div>
+
+    <div *ngIf="!isLoading && filteredPosts.length === 0" class="text-center py-16 bg-surface border border-border rounded-2xl text-text-muted">
+      Aranan kriterde kayıt bulunamadı.
+    </div>
+
+    <!-- Kart görünümü -->
+    <div *ngIf="!isLoading && filteredPosts.length > 0 && viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div
+        *ngFor="let post of sortedPosts"
+        class="bg-surface border border-border rounded-2xl overflow-hidden hover:shadow-md transition-shadow flex flex-col"
+      >
+        <div class="h-36 bg-primary-light flex items-center justify-center overflow-hidden">
+          <img *ngIf="post.image" [src]="post.image" [alt]="post.title" class="w-full h-full object-cover" />
+          <img
+            *ngIf="!post.image"
+            src="assets/branding/revlo-logo.png"
+            alt="Revlo"
+            class="h-9 w-auto opacity-40"
+          />
         </div>
 
-        <div *ngIf="!isLoading && filteredPosts.length === 0" class="empty-state">
-          <div class="empty-icon">📂</div>
-          <h3>Aranan Kriterde Kayıt Bulunamadı</h3>
-          <p>Arama kelimesini değiştirmeyi veya yeni bir kayıt eklemeyi deneyin.</p>
+        <div class="p-4 flex flex-col flex-1">
+          <div class="flex items-center justify-between mb-2">
+            <app-badge [text]="statusLabel(post)" [tone]="statusTone(post)"></app-badge>
+            <span class="text-xs text-text-muted">{{ formatDate(post.createdAt) }}</span>
+          </div>
+
+          <h3 class="font-bold text-text-primary mb-1 line-clamp-2">{{ post.title }}</h3>
+          <p class="text-sm text-text-muted mb-3">{{ post.authorFullName || post.authorName }} &middot; {{ languageLabel(post.language) }}</p>
+
+          <div class="flex flex-wrap gap-1.5 mb-3" *ngIf="post.tags?.length || post.collections?.length">
+            <span *ngFor="let c of post.collections" class="text-xs font-semibold text-primary bg-primary-light px-2 py-0.5 rounded-full">
+              {{ c.name }}
+            </span>
+            <span *ngFor="let t of post.tags" class="text-xs font-semibold text-text-muted bg-bg px-2 py-0.5 rounded-full">
+              {{ t.name }}
+            </span>
+          </div>
+
+          <p *ngIf="isScheduled(post)" class="text-xs font-semibold text-warning mb-3">
+            {{ formatDate(post.publishAt) }} tarihinde yayınlanacak
+          </p>
+
+          <div class="mt-auto flex justify-end gap-2 pt-3 border-t border-border flex-wrap">
+            <button
+              *ngIf="post.status === 'DRAFT'"
+              class="px-3 py-1.5 rounded-lg border border-primary !text-primary text-xs font-bold hover:bg-primary hover:!text-white transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              (click)="onQuickPublish(post)"
+              [disabled]="publishingSlug === post.slug"
+            >
+              {{ publishingSlug === post.slug ? 'Yayınlanıyor...' : 'Yayınla' }}
+            </button>
+            <a [routerLink]="['/posts/edit', post.slug]" class="px-3 py-1.5 rounded-lg bg-primary !text-white text-xs font-bold hover:bg-primary-dark transition-colors">
+              Düzenle
+            </a>
+            <button
+              class="px-3 py-1.5 rounded-lg border border-danger !text-danger text-xs font-bold hover:bg-danger hover:!text-white transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              (click)="onDelete(post)"
+              [disabled]="deletingSlug === post.slug"
+            >
+              Sil
+            </button>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Grid View -->
-        <div *ngIf="!isLoading && filteredPosts.length > 0 && viewMode === 'grid'" class="posts-grid">
-          <div *ngFor="let post of filteredPosts" class="post-card">
-            <div class="post-thumb">
-              <img *ngIf="post.image" [src]="post.image" [alt]="post.title" />
-              <div *ngIf="!post.image" class="thumb-fallback">
-                <span>REVLO AI</span>
+    <!-- Tablo görünümü -->
+    <div *ngIf="!isLoading && filteredPosts.length > 0 && viewMode === 'table'" class="bg-surface border border-border rounded-2xl overflow-x-auto">
+      <table class="w-full text-sm border-collapse table-fixed min-w-[900px]">
+        <colgroup>
+          <col class="w-[16%]" />
+          <col class="w-[22%]" />
+          <col class="w-[9%]" />
+          <col class="w-[7%]" />
+          <col class="w-[13%]" />
+          <col class="w-[9%]" />
+          <col class="w-[24%]" />
+        </colgroup>
+        <thead>
+          <tr class="border-b border-border text-left text-text-muted">
+            <th class="px-4 py-3 font-semibold">URL Adresi</th>
+            <th class="px-4 py-3 font-semibold">Başlık</th>
+            <th class="px-4 py-3 font-semibold">Durum</th>
+            <th class="px-4 py-3 font-semibold">Dil</th>
+            <th class="px-4 py-3 font-semibold">Yazar</th>
+            <th class="px-4 py-3 font-semibold">Tarih</th>
+            <th class="px-4 py-3 font-semibold text-right">İşlemler</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let post of sortedPosts" class="border-b border-border last:border-0 hover:bg-bg transition-colors align-top">
+            <td class="px-4 py-3">
+              <span class="font-mono text-xs text-primary truncate block" [title]="'/posts/' + post.slug">/posts/{{ post.slug }}</span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="font-bold text-text-primary truncate" [title]="post.title">{{ post.title }}</div>
+              <div class="flex flex-wrap gap-1 mt-1" *ngIf="post.tags?.length">
+                <span *ngFor="let t of post.tags" class="text-[11px] font-semibold text-text-muted bg-bg px-1.5 py-0.5 rounded-full">
+                  {{ t.name }}
+                </span>
               </div>
-              <span class="file-path-badge">/posts/{{ post.slug }}</span>
-            </div>
-
-            <div class="post-body">
-              <div class="post-meta">
-                <span>✍️ {{ post.authorName || 'Revlo Ekibi' }}</span>
-                <span>•</span>
-                <span>📅 {{ formatDate(post.createdAt) }}</span>
-              </div>
-
-              <h3 class="post-title">{{ post.title }}</h3>
-
-              <div class="post-actions">
-                <a [routerLink]="['/posts/edit', post.slug]" class="btn btn-purple-sm">
-                  ✏️ Düzenle
+            </td>
+            <td class="px-4 py-3">
+              <app-badge [text]="statusLabel(post)" [tone]="statusTone(post)"></app-badge>
+            </td>
+            <td class="px-4 py-3 text-text-muted truncate">{{ languageLabel(post.language) }}</td>
+            <td class="px-4 py-3 text-text-muted truncate" [title]="post.authorFullName || post.authorName">
+              {{ post.authorFullName || post.authorName }}
+            </td>
+            <td class="px-4 py-3 text-text-muted whitespace-nowrap">{{ formatDate(post.createdAt) }}</td>
+            <td class="px-4 py-3">
+              <div class="flex justify-end gap-2 flex-wrap">
+                <button
+                  *ngIf="post.status === 'DRAFT'"
+                  class="px-3 py-1.5 rounded-lg border border-primary !text-primary text-xs font-bold hover:bg-primary hover:!text-white transition-colors disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap"
+                  (click)="onQuickPublish(post)"
+                  [disabled]="publishingSlug === post.slug"
+                >
+                  {{ publishingSlug === post.slug ? 'Yayınlanıyor...' : 'Yayınla' }}
+                </button>
+                <a [routerLink]="['/posts/edit', post.slug]" class="px-3 py-1.5 rounded-lg bg-primary !text-white text-xs font-bold hover:bg-primary-dark transition-colors whitespace-nowrap">
+                  Düzenle
                 </a>
                 <button
-                  class="btn btn-danger btn-sm"
+                  class="px-3 py-1.5 rounded-lg border border-danger !text-danger text-xs font-bold hover:bg-danger hover:!text-white transition-colors disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap"
                   (click)="onDelete(post)"
                   [disabled]="deletingSlug === post.slug"
                 >
                   Sil
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Table View -->
-        <table *ngIf="!isLoading && filteredPosts.length > 0 && viewMode === 'table'" class="data-table">
-          <thead>
-            <tr>
-              <th>URL Adresi</th>
-              <th>Başlık</th>
-              <th>Yazar</th>
-              <th>Tarih</th>
-              <th style="text-align: right">İşlemler</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let post of filteredPosts">
-              <td>
-                <div class="file-code-cell">
-                  <span>📄 /posts/{{ post.slug }}</span>
-                </div>
-              </td>
-              <td>
-                <span class="table-post-title">{{ post.title }}</span>
-              </td>
-              <td>
-                <span class="author-tag">{{ post.authorName || 'Revlo Ekibi' }}</span>
-              </td>
-              <td>
-                <span class="date-tag">{{ formatDate(post.createdAt) }}</span>
-              </td>
-              <td style="text-align: right">
-                <div class="table-actions">
-                  <a [routerLink]="['/posts/edit', post.slug]" class="btn btn-purple-sm">
-                    ✏️ Düzenle
-                  </a>
-                  <button
-                    class="btn btn-danger btn-sm"
-                    (click)="onDelete(post)"
-                    [disabled]="deletingSlug === post.slug"
-                  >
-                    Sil
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   `,
-  styles: [
-    `
-      .collection-badge {
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        color: var(--revlo-purple-main);
-        background: #f0ebf8;
-        border: 1px solid rgba(124, 58, 237, 0.2);
-        padding: 4px 12px;
-        border-radius: var(--radius-pill);
-        margin-bottom: 8px;
-        display: inline-block;
-      }
-      .page-title {
-        color: #111827 !important;
-        font-weight: 800;
-      }
-      .section-sub {
-        color: #4b5563 !important;
-        font-size: 14px;
-        font-weight: 500;
-        margin-top: 4px;
-      }
-      .filter-card {
-        padding: 16px 24px;
-        margin-bottom: 24px;
-        background: #ffffff;
-      }
-      .filter-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-      .search-box {
-        position: relative;
-        flex: 1;
-        max-width: 440px;
-      }
-      .search-icon {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 14px;
-      }
-      .search-input {
-        padding-left: 40px;
-        color: #111827 !important;
-        background: #f8f6fc !important;
-        font-weight: 600 !important;
-        border: 1px solid #e8e3f2;
-      }
-      .search-input:focus {
-        background: #ffffff !important;
-        border-color: #7c3aed;
-      }
-      .search-input::placeholder {
-        color: #9ca3af !important;
-        font-weight: 400;
-      }
-      .view-mode-toggle {
-        display: flex;
-        gap: 4px;
-        background: #f0ebf8;
-        padding: 4px;
-        border-radius: 12px;
-        border: 1px solid rgba(124, 58, 237, 0.15);
-      }
-      .mode-btn {
-        padding: 6px 14px;
-        font-size: 12px;
-        font-weight: 700;
-        color: #4b5563 !important;
-        border-radius: 8px;
-        background: transparent;
-      }
-      .mode-btn.active {
-        color: #ffffff !important;
-        background: var(--revlo-purple-main);
-      }
-      .main-card {
-        padding: 24px;
-        background: #ffffff;
-      }
-      .loading-state, .empty-state {
-        padding: 60px;
-        text-align: center;
-        color: #6b7280 !important;
-      }
-      .empty-icon { font-size: 40px; margin-bottom: 12px; }
-      .spinner {
-        width: 36px;
-        height: 36px;
-        border: 3px solid #e8e3f2;
-        border-top-color: var(--revlo-purple-main);
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        margin: 0 auto 12px;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-
-      .posts-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 24px;
-      }
-      .post-card {
-        background: #ffffff;
-        border: 1px solid #e8e3f2;
-        border-radius: var(--radius-card);
-        overflow: hidden;
-        transition: var(--transition-smooth);
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-      }
-      .post-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 25px rgba(124, 58, 237, 0.1);
-        border-color: rgba(124, 58, 237, 0.3);
-      }
-      .post-thumb {
-        position: relative;
-        height: 160px;
-        background: #f1f5f9;
-        overflow: hidden;
-      }
-      .post-thumb img { width: 100%; height: 100%; object-fit: cover; }
-      .thumb-fallback {
-        width: 100%; height: 100%;
-        background: linear-gradient(135deg, #2a1b4e, #7c3aed);
-        display: flex; align-items: center; justify-content: center;
-        color: #ffffff; font-weight: 800; font-family: 'Outfit', sans-serif;
-      }
-      .file-path-badge {
-        position: absolute;
-        bottom: 10px;
-        left: 10px;
-        background: rgba(17, 24, 39, 0.85);
-        color: #ffffff;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 10px;
-        padding: 3px 8px;
-        border-radius: 6px;
-      }
-      .post-body {
-        padding: 18px;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        justify-content: space-between;
-      }
-      .post-meta {
-        font-size: 12px;
-        color: #6b7280 !important;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 8px;
-      }
-      .post-title {
-        font-size: 17px;
-        font-weight: 800;
-        color: #111827 !important;
-        margin-bottom: 16px;
-        line-height: 1.4;
-      }
-      .post-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        padding-top: 12px;
-        border-top: 1px solid #f1f5f9;
-      }
-      .btn-purple-sm {
-        background: linear-gradient(135deg, var(--revlo-purple-main), var(--revlo-purple-light)) !important;
-        color: #ffffff !important;
-        padding: 6px 14px;
-        font-size: 12px;
-        font-weight: 700;
-        border-radius: var(--radius-pill);
-        box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-      }
-      .btn-purple-sm:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);
-      }
-      .file-code-cell {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 12px;
-        color: var(--revlo-purple-main);
-        font-weight: 700;
-      }
-      .data-table th {
-        color: #111827 !important;
-        font-weight: 800;
-        background: #f8f6fc;
-      }
-      .table-post-title { font-weight: 800; color: #111827 !important; }
-      .author-tag { font-size: 13px; color: #4b5563 !important; font-weight: 600; }
-      .date-tag { font-size: 12px; color: #6b7280 !important; font-weight: 600; }
-      .table-actions { display: flex; justify-content: flex-end; gap: 8px; }
-      .btn-sm { padding: 6px 12px; font-size: 12px; }
-    `,
-  ],
 })
 export class PostsListComponent implements OnInit {
   private postService = inject(PostService);
+  private collectionService = inject(CollectionService);
+  private tagService = inject(TagService);
+  private userService = inject(UserService);
+  private route = inject(ActivatedRoute);
+  authService = inject(AuthService);
   private toastService = inject(ToastService);
 
   posts: Post[] = [];
+  collections: CollectionSummary[] = [];
+  tags: TagSummary[] = [];
+  authorOptions: { username: string; label: string }[] = [];
   isLoading = true;
-  searchQuery = '';
-  viewMode: 'grid' | 'table' = 'grid';
   deletingSlug: string | null = null;
+  publishingSlug: string | null = null;
+  viewMode: 'grid' | 'table' = 'grid';
+  sortKey: SortKey = 'date-desc';
+
+  filtersOpen = false;
+  searchQuery = '';
+  statusSet = new Set<string>();
+  languageSet = new Set<string>();
+  collectionSet = new Set<string>();
+  tagSet = new Set<string>();
+  authorSet = new Set<string>();
+
+  // Her filtre kategorisinde başlangıçta sadece PAGE_STEP kadar seçenek
+  // gösteriliyor - "daha fazla göster" ile 5'er 5'er artıyor.
+  collectionShowCount = PAGE_STEP;
+  tagShowCount = PAGE_STEP;
+  authorShowCount = PAGE_STEP;
+
+  languageOptions: { value: Language; label: string }[] = [
+    { value: 'TR', label: 'Türkçe' },
+    { value: 'EN', label: 'İngilizce' },
+    { value: 'DE', label: 'Almanca' },
+    { value: 'RU', label: 'Rusça' },
+  ];
 
   ngOnInit(): void {
+    // Koleksiyonlar sayfasından bir koleksiyona tıklanıp gelindiyse
+    // (?collection=Ad) o koleksiyon otomatik işaretli gelsin.
+    const collectionParam = this.route.snapshot.queryParamMap.get('collection');
+    if (collectionParam) {
+      this.collectionSet.add(collectionParam);
+      this.filtersOpen = true;
+    }
+
     this.loadPosts();
+    this.collectionService.getCollections().subscribe({ next: (list) => (this.collections = list), error: () => {} });
+    this.tagService.getTags().subscribe({ next: (list) => (this.tags = list), error: () => {} });
+
+    if (this.authService.isAdmin()) {
+      this.userService.getUsers().subscribe({
+        next: (list) =>
+          (this.authorOptions = list
+            .filter((u) => !u.deleted)
+            .map((u) => ({ username: u.username, label: u.fullName || u.username }))),
+        error: () => {},
+      });
+    }
   }
 
   loadPosts(): void {
@@ -395,10 +413,120 @@ export class PostsListComponent implements OnInit {
     });
   }
 
+  toggleSet(set: Set<string>, value: string): void {
+    if (set.has(value)) set.delete(value);
+    else set.add(value);
+  }
+
+  get activeFilterCount(): number {
+    return (
+      this.statusSet.size + this.languageSet.size + this.collectionSet.size + this.tagSet.size + this.authorSet.size
+    );
+  }
+
+  clearAllFilters(): void {
+    this.statusSet.clear();
+    this.languageSet.clear();
+    this.collectionSet.clear();
+    this.tagSet.clear();
+    this.authorSet.clear();
+    this.searchQuery = '';
+  }
+
+  isScheduled(post: Post): boolean {
+    return post.status === 'DRAFT' && !!post.publishAt && new Date(post.publishAt) > new Date();
+  }
+
+  statusLabel(post: Post): string {
+    if (this.isScheduled(post)) return 'Zamanlanmış';
+    return post.status === 'PUBLISHED' ? 'Yayında' : 'Taslak';
+  }
+
+  statusTone(post: Post): BadgeTone {
+    if (this.isScheduled(post)) return 'warning';
+    return post.status === 'PUBLISHED' ? 'success' : 'neutral';
+  }
+
+  languageLabel(lang: Language): string {
+    return this.languageOptions.find((l) => l.value === lang)?.label || lang;
+  }
+
   get filteredPosts(): Post[] {
+    const q = this.searchQuery.toLowerCase().trim();
+
     return this.posts.filter((p) => {
-      const q = this.searchQuery.toLowerCase().trim();
-      return !q || p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q);
+      const matchesQuery =
+        !q ||
+        p.title.toLowerCase().includes(q) ||
+        p.slug.toLowerCase().includes(q) ||
+        (p.tags || []).some((t) => t.name.toLowerCase().includes(q));
+
+      const postStatusKey = this.isScheduled(p) ? 'SCHEDULED' : p.status;
+      const matchesStatus = this.statusSet.size === 0 || this.statusSet.has(postStatusKey);
+
+      const matchesLanguage = this.languageSet.size === 0 || this.languageSet.has(p.language);
+
+      const matchesCollection =
+        this.collectionSet.size === 0 || (p.collections || []).some((c) => this.collectionSet.has(c.name));
+
+      const matchesTag = this.tagSet.size === 0 || (p.tags || []).some((t) => this.tagSet.has(t.name));
+
+      const matchesAuthor = this.authorSet.size === 0 || this.authorSet.has(p.authorName);
+
+      return matchesQuery && matchesStatus && matchesLanguage && matchesCollection && matchesTag && matchesAuthor;
+    });
+  }
+
+  get sortedPosts(): Post[] {
+    const list = [...this.filteredPosts];
+    switch (this.sortKey) {
+      case 'date-asc':
+        return list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      case 'title-asc':
+        return list.sort((a, b) => a.title.localeCompare(b.title, 'tr'));
+      case 'title-desc':
+        return list.sort((a, b) => b.title.localeCompare(a.title, 'tr'));
+      case 'date-desc':
+      default:
+        return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+  }
+
+  // Listeden tek tıkla yayınlama - post zaten tüm alanlarıyla elimizde
+  // olduğu için editöre gitmeye gerek yok, aynı veriyle status=PUBLISHED
+  // gönderip güncelliyoruz. publishAt kasten göndermiyoruz - backend zaten
+  // status=PUBLISHED olunca zamanlanmış tarihi otomatik temizliyor.
+  onQuickPublish(post: Post): void {
+    this.publishingSlug = post.slug;
+    const payload: PostPayload = {
+      slug: post.slug,
+      title: post.title,
+      content: post.content,
+      status: 'PUBLISHED',
+      language: post.language,
+      collectionIds: (post.collections || []).map((c) => c.id),
+      tagNames: (post.tags || []).map((t) => t.name),
+      media: (post.media || []).map((m) => ({ mediaId: m.mediaId, caption: m.caption })),
+      seo: {
+        metaTitle: post.seo?.metaTitle,
+        metaDescription: post.seo?.metaDescription,
+        ogImageUrl: post.seo?.ogImageUrl,
+        canonicalUrl: post.seo?.canonicalUrl,
+        noIndex: post.seo?.noIndex,
+      },
+    };
+
+    this.postService.updatePost(post.slug, payload).subscribe({
+      next: (updated) => {
+        this.publishingSlug = null;
+        this.toastService.success(`"${post.title}" yayınlandı.`);
+        const idx = this.posts.findIndex((p) => p.slug === post.slug);
+        if (idx !== -1) this.posts[idx] = updated;
+      },
+      error: (err) => {
+        this.publishingSlug = null;
+        this.toastService.error(err.message || 'Yayınlanamadı.');
+      },
     });
   }
 

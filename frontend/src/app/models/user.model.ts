@@ -1,10 +1,14 @@
+// Backend'den GET ile geldiğinde bir kullanıcının tam hali
 export interface User {
-  id?: number;
+  id: number;
   username: string;
+  fullName?: string;
+  bio?: string;
+  avatarUrl?: string; // backend zaten tam URL olarak gönderiyor
+  slug?: string;
   role: 'ADMIN' | 'EDITOR';
-  token?: string;
-  type?: string;
-  postCount?: number;
+  deleted: boolean;
+  postCount: number;
 }
 
 export interface AuthResponse {
@@ -16,11 +20,29 @@ export interface AuthResponse {
 
 export interface LoginPayload {
   username: string;
-  password?: string;
+  password: string;
 }
 
+// Admin yeni bir editör/admin OLUŞTURURKEN gönderdiği veri.
+// fullName artık ZORUNLU (backend bunu istiyor).
 export interface SignupPayload {
   username: string;
-  password?: string;
+  password: string;
   role: 'ADMIN' | 'EDITOR';
+  fullName: string;
+  bio?: string;
+  avatarMediaId?: number;
+  slug?: string;
+}
+
+// Kullanıcının KENDİ profilini güncellerken gönderdiği veri (hepsi opsiyonel,
+// göndermediğin alan olduğu gibi kalır)
+export interface UpdateProfilePayload {
+  fullName?: string;
+  bio?: string;
+  avatarMediaId?: number;
+  slug?: string;
+  username?: string;
+  newPassword?: string;
+  currentPassword?: string;
 }

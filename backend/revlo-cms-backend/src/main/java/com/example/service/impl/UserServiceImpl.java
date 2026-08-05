@@ -1,6 +1,7 @@
 package com.example.service.impl;
 
 import com.example.dto.user.UserResponseDto;
+import com.example.entity.Media;
 import com.example.entity.Role;
 import com.example.entity.User;
 import com.example.exception.BaseException;
@@ -10,7 +11,9 @@ import com.example.repository.MediaRepository;
 import com.example.repository.PostRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IUserService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,23 +24,104 @@ public class UserServiceImpl implements IUserService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final MediaRepository mediaRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, PostRepository postRepository, MediaRepository mediaRepository) {
+    public UserServiceImpl(UserRepository userRepository, PostRepository postRepository,
+                           MediaRepository mediaRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.mediaRepository = mediaRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
-    public List<UserResponseDto> getAllUsers() {
+    public List<UserResponseDto> getAllUsers(boolean includeDeleted) {
         return userRepository.findAll().stream()
-                .map(user -> new UserResponseDto(
-                        user.getId(),
-                        user.getUsername(),
-                        user.getRole().name(),
-                        postRepository.countByAuthor_Id(user.getId())
-                ))
+                .filter(user -> includeDeleted || !user.isDeleted())
+                .map(user -> toDto(user, postRepository.countByAuthor_Id(user.getId())))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public UserResponseDto getMyProfile(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Kullanıcı bulunamadı")));
+        return toDto(user, postRepository.countByAuthor_Id(user.getId()));
+    }
+
+    @Override
+    public UserResponseDto updateMyProfile(String username, UpdateProfileRequestDto dto) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Kullanıcı bulunamadı")));
+
+        if (dto.getFullName() != null) {
+            user.setFullName(dto.getFullName());
+        }
+        if (dto.getBio() != null) {
+            user.setBio(dto.getBio());
+        }
+        if (dto.getAvatarMediaId() != null) {
+            Media avatarMedia = mediaRepository.findById(dto.getAvatarMediaId())
+                    .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Profil fotoğrafı bulunamadı")));
+            user.setAvatarMedia(avatarMedia);
+        }
+        if (dto.getSlug() != null && !dto.getSlug().equals(user.getSlug())) {
+            if (userRepository.existsBySlug(dto.getSlug())) {
+                throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Bu slug zaten kullanımda"));
+            }
+            user.setSlug(dto.getSlug());
+        }
+
+        // Kullanıcı adı değişikliği - NOT: mevcut JWT eski kullanıcı adını taşımaya
+        // devam eder, bu isteğin sonucunda kullanıcı yeniden giriş yapmalı
+        // (frontend bunu kullanıcıya belirtip otomatik logout yapmalı).
+        if (dto.getUsername() != null && !dto.getUsername().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(dto.getUsername())) {
+                throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Bu kullanıcı adı zaten kullanımda"));
+            }
+            user.setUsername(dto.getUsername());
+        }
+
+        // Şifre değişikliği - mevcut şifre doğrulanmadan asla değiştirilmez
+        if (dto.getNewPassword() != null && !dto.getNewPassword().isBlank()) {
+            if (dto.getCurrentPassword() == null || dto.getCurrentPassword().isBlank()) {
+                throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Şifrenizi değiştirmek için mevcut şifrenizi girmelisiniz"));
+            }
+            if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+                throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Mevcut şifreniz hatalı"));
+            }
+            user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        }
+
+        User saved = userRepository.save(user);
+        return toDto(saved, postRepository.countByAuthor_Id(saved.getId()));
+    }
+
+    private UserResponseDto toDto(User user, long postCount) {
+        return new UserResponseDto(
+                user.getId(),
+                user.getUsername(),
+                user.getFullName(),
+                user.getBio(),
+                resolveMediaUrl(user.getAvatarMedia()),
+                user.getSlug(),
+                user.getRole().name(),
+                user.isDeleted(),
+                postCount
+        );
+    }
+
+    // PostServiceImpl/DashboardServiceImpl'deki aynı yardımcı metodun tekrarı -
+    // servisler birbirine bağımlı olmasın diye bilinçli olarak kopyalanıyor.
+    private String resolveMediaUrl(Media media) {
+        if (media == null) {
+            return null;
+        }
+        if (media.getFileUrl() != null && media.getFileUrl().startsWith("http")) {
+            return media.getFileUrl();
+        }
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        return baseUrl + media.getFileUrl();
     }
 
     @Override
@@ -50,30 +134,25 @@ public class UserServiceImpl implements IUserService {
             throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Kendi hesabınızı silemezsiniz"));
         }
 
-        // Sistemdeki son ADMIN'in silinmesini engelle
+        if (user.isDeleted()) {
+            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Bu kullanıcı zaten silinmiş"));
+        }
+
+        // Sistemdeki son (silinmemiş) ADMIN'in silinmesini engelle
         if (user.getRole() == Role.ADMIN) {
-            long adminCount = userRepository.findAll().stream()
-                    .filter(u -> u.getRole() == Role.ADMIN)
+            long activeAdminCount = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == Role.ADMIN && !u.isDeleted())
                     .count();
-            if (adminCount <= 1) {
+            if (activeAdminCount <= 1) {
                 throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR, "Sistemdeki son ADMIN kullanıcı silinemez"));
             }
         }
 
-        // Kullanıcının yazıları varsa engelle (yazı silmeden/yazar değiştirmeden kullanıcı silinemez)
-        long postCount = postRepository.countByAuthor_Id(user.getId());
-        if (postCount > 0) {
-            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
-                    "Bu kullanıcının " + postCount + " adet yazısı var. Önce bu yazıları silin veya başka bir yazara aktarın"));
-        }
-
-        // Kullanıcının yüklediği medya varsa engelle
-        long mediaCount = mediaRepository.countByUserId(user.getId());
-        if (mediaCount > 0) {
-            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
-                    "Bu kullanıcının " + mediaCount + " adet yüklediği medya var. Önce bunları silin"));
-        }
-
-        userRepository.delete(user);
+        // Soft delete: hesap kalıcı olarak silinmiyor, sadece pasifleştiriliyor.
+        // Yazıları/medyaları olduğu için engelleme YOK artık - içerik kalıcı olarak
+        // yaşamaya devam ediyor, sadece hesap girişi kapanıyor. Bkz. User.deleted
+        // alanındaki yorum ve UserDetailsServiceImpl (login engeli burada uygulanıyor).
+        user.setDeleted(true);
+        userRepository.save(user);
     }
 }

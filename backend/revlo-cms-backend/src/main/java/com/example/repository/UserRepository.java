@@ -6,4 +6,11 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
+    Optional<User> findBySlug(String slug);
+    boolean existsBySlug(String slug);
+    boolean existsByUsername(String username);
+
+    // Bir medya profil fotoğrafı olarak kullanılıyor mu - MediaServiceImpl.deleteMedia
+    // artık bunu da kontrol ediyor.
+    boolean existsByAvatarMedia_Id(Long mediaId);
 }

@@ -11,5 +11,6 @@ public class UserResponseDto {
     private Long id;
     private String username;
     private String role;
+    private boolean deleted;
     private long postCount;
 }

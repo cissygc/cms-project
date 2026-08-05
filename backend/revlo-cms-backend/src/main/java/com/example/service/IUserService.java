@@ -5,6 +5,6 @@ import com.example.dto.user.UserResponseDto;
 import java.util.List;
 
 public interface IUserService {
-    List<UserResponseDto> getAllUsers();
+    List<UserResponseDto> getAllUsers(boolean includeDeleted);
     void deleteUser(Long id, String currentUsername);
 }

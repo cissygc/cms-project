@@ -2,6 +2,7 @@ package com.example.service.impl;
 
 import com.example.dto.PostResponseDto;
 import com.example.dto.dashboard.DashboardStatsDto;
+import com.example.entity.Media;
 import com.example.entity.Post;
 import com.example.entity.User;
 import com.example.exception.BaseException;
@@ -12,6 +13,7 @@ import com.example.repository.PostRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IDashboardService;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,11 +62,40 @@ public class DashboardServiceImpl implements IDashboardService {
                 post.getId(),
                 post.getSlug(),
                 post.getTitle(),
-                post.getImage(),
+                resolveMediaUrl(post.getCoverMedia()),
                 post.getContent(),
+                post.getStatus().name(),
+                post.getLanguage().name(),
+                collectionDtos,
+                java.util.Collections.emptyList(),
+                // Dashboard "son eklenen yazılar" özeti için içerik görselleri
+                // taşınmıyor (hafif tutmak için) - sadece kapak görseli yeterli.
+                java.util.Collections.emptyList(),
+                // Dashboard özeti için SEO/okuma süresi hesaplanmıyor (hafif tutmak için,
+                // media listesiyle aynı deliberate simplification) - CMS panelinde ilgili
+                // post açıldığında zaten tam veriyle (PostServiceImpl.mapToDto) gelecek.
+                null,
+                0,
+                post.getPublishAt(),
                 post.getAuthor().getUsername(),
+                post.getAuthor().getFullName(),
+                resolveMediaUrl(post.getAuthor().getAvatarMedia()),
+                post.getAuthor().getSlug(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
+    }
+
+    // PostServiceImpl'deki resolveMediaUrl/toAbsoluteUrl ile aynı mantık - iki
+    // servis birbirine bağımlı olmasın diye burada da küçük bir tekrar var.
+    private String resolveMediaUrl(Media media) {
+        if (media == null) {
+            return null;
+        }
+        if (media.getFileUrl() != null && media.getFileUrl().startsWith("http")) {
+            return media.getFileUrl();
+        }
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        return baseUrl + media.getFileUrl();
     }
 }

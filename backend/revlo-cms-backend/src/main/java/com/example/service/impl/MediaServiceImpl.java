@@ -8,6 +8,8 @@ import com.example.exception.BaseException;
 import com.example.exception.ErrorMessage;
 import com.example.exception.MessageType;
 import com.example.repository.MediaRepository;
+import com.example.repository.PostMediaRepository;
+import com.example.repository.PostRepository;
 import com.example.repository.UserRepository;
 import com.example.service.IMediaService;
 import jakarta.transaction.Transactional;
@@ -32,13 +34,18 @@ public class MediaServiceImpl implements IMediaService {
 
     private final MediaRepository mediaRepository;
     private final UserRepository userRepository;
+    private final PostMediaRepository postMediaRepository;
+    private final PostRepository postRepository;
 
     // Dosyaların fiziksel olarak kaydedileceği klasör
     private final String uploadDir = "uploads/";
 
-    public MediaServiceImpl(MediaRepository mediaRepository, UserRepository userRepository) {
+    public MediaServiceImpl(MediaRepository mediaRepository, UserRepository userRepository,
+                            PostMediaRepository postMediaRepository, PostRepository postRepository) {
         this.mediaRepository = mediaRepository;
         this.userRepository = userRepository;
+        this.postMediaRepository = postMediaRepository;
+        this.postRepository = postRepository;
     }
 
     @Override
@@ -88,7 +95,9 @@ public class MediaServiceImpl implements IMediaService {
                     String.valueOf(media.getId()),
                     media.getFileName(),
                     toAbsoluteUrl(media.getFileUrl()),
-                    media.getFileSize()
+                    media.getFileSize(),
+                    user.getUsername(),
+                    user.getFullName()
             );
 
         } catch (IOException ex) {
@@ -108,22 +117,23 @@ public class MediaServiceImpl implements IMediaService {
     }
 
     @Override
-    public List<MediaResponseDto> getUserMedia(String username) {
+    public List<MediaResponseDto> getUserMedia(String username, boolean isAdmin) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Kullanıcı bulunamadı")));
 
-        // Sadece giriş yapan kullanıcıya ait görselleri çekiyoruz
-        List<Media> userMedia = mediaRepository.findAllByUserId(user.getId());
+        // ADMIN herkesin medyasını görür, editör sadece kendi yüklediklerini.
+        List<Media> targetMedia = isAdmin
+                ? mediaRepository.findAll()
+                : mediaRepository.findAllByUserId(user.getId());
 
-        return userMedia.stream()
+        return targetMedia.stream()
                 .map(media -> new MediaResponseDto(
                         String.valueOf(media.getId()),
                         media.getFileName(),
-                        // Eski (bu düzeltmeden önce) yüklenmiş kayıtların fileUrl'i encode
-                        // edilmemiş olabilir. Bu yüzden URL'i her zaman media.getFileName()'den
-                        // TAZE olarak (encode ederek) kuruyoruz; stored fileUrl'e güvenmiyoruz.
-                        toAbsoluteUrl("/uploads/" + encodeUrlSegment(media.getFileName())),
-                        media.getFileSize()
+                        toAbsoluteUrl("/uploads/" + encodeUrlSegment(media.getStoredFileName())),
+                        media.getFileSize(),
+                        media.getUser().getUsername(),
+                        media.getUser().getFullName()
                 ))
                 .collect(Collectors.toList());
     }
@@ -141,13 +151,32 @@ public class MediaServiceImpl implements IMediaService {
 
     @Transactional
     @Override
-    public void deleteMedia(Long id, String username) {
+    public void deleteMedia(Long id, String username, boolean isAdmin) {
         Media media = mediaRepository.findById(id)
                 .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Medya bulunamadı")));
 
-        // Silmeye çalışan kişi, medyayı yükleyen kişi mi kontrolü
-        if (!media.getUser().getUsername().equals(username)) {
+        // Silmeye çalışan kişi, medyayı yükleyen kişi mi (ya da ADMIN mi) kontrolü
+        if (!isAdmin && !media.getUser().getUsername().equals(username)) {
             throw new BaseException(new ErrorMessage(MessageType.UNAUTHORIZED_ACCESS, "Bu dosyayı silme yetkiniz yok"));
+        }
+
+        // Bir post'un içeriğinde kullanılan görsel sessizce silinip kırık link
+        // bırakmasın diye engelleniyor.
+        if (postMediaRepository.existsByMedia_Id(id)) {
+            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
+                    "Bu görsel bir veya daha fazla yazının içeriğinde kullanılıyor. Önce yazı(lar)dan kaldırın"));
+        }
+
+        // Kapak görseli ve profil fotoğrafı ARTIK gerçek bir Media ilişkisi olduğu
+        // için (önceden düz string oldukları için bu kontrol yapılamıyordu), bunları da
+        // kontrol ediyoruz.
+        if (postRepository.existsByCoverMedia_Id(id)) {
+            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
+                    "Bu görsel bir veya daha fazla yazının kapak görseli olarak kullanılıyor. Önce kapak görselini değiştirin"));
+        }
+        if (userRepository.existsByAvatarMedia_Id(id)) {
+            throw new BaseException(new ErrorMessage(MessageType.VALIDATION_ERROR,
+                    "Bu görsel bir kullanıcının profil fotoğrafı olarak kullanılıyor. Önce profil fotoğrafını değiştirin"));
         }
 
         try {

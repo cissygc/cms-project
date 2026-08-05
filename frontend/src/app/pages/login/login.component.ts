@@ -8,160 +8,60 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="login-page-wrapper">
-      <div class="glass-card login-card">
-        <div class="login-brand-header">
-          <div class="logo-box">
-            <span class="logo-char">R</span>
-          </div>
-          <h1 class="brand-title">revlo<span class="brand-sub">.ai</span></h1>
-          <p class="login-desc">Enterprise İçerik Yönetim Sistemi</p>
+    <!-- min-h-[80vh]: ekranın yaklaşık %80'i kadar yükseklik, kartı dikeyde ortalamak için -->
+    <div class="min-h-[80vh] flex items-center justify-center">
+      <div class="w-full max-w-md bg-surface border border-border rounded-2xl shadow-sm p-10">
+
+        <!-- Logo + başlık -->
+        <div class="text-center mb-8">
+          <img src="assets/branding/revlo-logo.png" alt="Revlo" class="h-10 w-auto mx-auto mb-3" />
+          <p class="text-sm text-text-muted font-medium">İçerik Yönetim Sistemi</p>
         </div>
 
-        <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
-          <div class="form-group">
-            <label class="form-label" for="username">Kullanıcı Adı</label>
+        <form (ngSubmit)="onSubmit()" #loginForm="ngForm" class="space-y-5">
+          <div>
+            <label class="block text-sm font-bold text-text-primary mb-1.5" for="username">Kullanıcı Adı</label>
             <input
               type="text"
               id="username"
               name="username"
-              class="form-input login-input"
+              class="w-full px-4 py-3 rounded-xl border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               [(ngModel)]="username"
               required
-              placeholder="Kullanıcı adınızı giriniz (Örn: admin)"
+              placeholder="Kullanıcı adınız"
               autocomplete="username"
             />
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="password">Şifre</label>
+          <div>
+            <label class="block text-sm font-bold text-text-primary mb-1.5" for="password">Şifre</label>
             <input
               type="password"
               id="password"
               name="password"
-              class="form-input login-input"
+              class="w-full px-4 py-3 rounded-xl border border-border bg-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               [(ngModel)]="password"
               required
-              placeholder="Şifrenizi giriniz"
+              placeholder="Şifreniz"
               autocomplete="current-password"
             />
           </div>
 
           <button
             type="submit"
-            class="btn btn-primary btn-block"
+            class="w-full py-3 rounded-xl bg-primary !text-white text-sm font-bold hover:bg-primary-dark transition-colors disabled:opacity-50"
             [disabled]="isLoading || !loginForm.valid"
           >
-            <span *ngIf="!isLoading">Giriş Yap</span>
-            <span *ngIf="isLoading">Giriş yapılıyor...</span>
+            {{ isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap' }}
           </button>
         </form>
 
-        <div class="login-footer">
-          <span>Revlo AI Content Management System</span>
-        </div>
+        <p class="text-center text-xs text-text-muted mt-8 pt-6 border-t border-border">
+          Revlo AI İçerik Yönetim Sistemi
+        </p>
       </div>
     </div>
   `,
-  styles: [
-    `
-      .login-page-wrapper {
-        min-height: calc(100vh - 68px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        background: #f8f6fc;
-      }
-      .login-card {
-        width: 100%;
-        max-width: 440px;
-        padding: 44px;
-        background: #ffffff !important;
-        border-radius: 24px;
-        box-shadow: 0px 20px 50px rgba(124, 58, 237, 0.08);
-        border: 1px solid #e8e3f2;
-      }
-      .login-brand-header {
-        text-align: center;
-        margin-bottom: 32px;
-      }
-      .logo-box {
-        width: 56px;
-        height: 56px;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #7c3aed, #d946ef);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Outfit', sans-serif;
-        font-weight: 900;
-        font-size: 28px;
-        color: #ffffff;
-        margin: 0 auto 16px;
-        box-shadow: 0 8px 24px rgba(124, 58, 237, 0.3);
-      }
-      .brand-title {
-        font-size: 30px;
-        font-weight: 900;
-        color: #111827 !important;
-        margin-bottom: 4px;
-      }
-      .brand-sub {
-        color: #7c3aed;
-      }
-      .login-desc {
-        font-size: 14px;
-        color: #6b7280 !important;
-        font-weight: 500;
-      }
-      .form-group {
-        margin-bottom: 20px;
-      }
-      .form-label {
-        font-size: 14px;
-        font-weight: 700;
-        color: #111827 !important;
-        margin-bottom: 8px;
-        display: block;
-      }
-      .login-input {
-        width: 100%;
-        padding: 14px 18px;
-        background: #f8f6fc !important;
-        border: 1px solid #e8e3f2 !important;
-        color: #111827 !important;
-        font-weight: 600 !important;
-        font-size: 14px;
-        border-radius: 12px;
-      }
-      .login-input::placeholder {
-        color: #9ca3af !important;
-        font-weight: 400;
-      }
-      .login-input:focus {
-        background: #ffffff !important;
-        border-color: #7c3aed !important;
-        box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12) !important;
-        outline: none;
-      }
-      .btn-block {
-        width: 100%;
-        padding: 14px;
-        font-size: 15px;
-        margin-top: 12px;
-      }
-      .login-footer {
-        margin-top: 28px;
-        padding-top: 20px;
-        border-top: 1px solid #e8e3f2;
-        text-align: center;
-        font-size: 12px;
-        color: #9ca3af !important;
-        font-weight: 500;
-      }
-    `,
-  ],
 })
 export class LoginComponent {
   authService = inject(AuthService);

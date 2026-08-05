@@ -4,11 +4,13 @@ import com.example.dto.auth.JwtResponseDto;
 import com.example.dto.auth.LoginRequestDto;
 import com.example.dto.auth.RegisterRequestDto;
 import com.example.dto.auth.RegisterResponseDto;
+import com.example.entity.Media;
 import com.example.entity.Role;
 import com.example.entity.User;
 import com.example.exception.BaseException;
 import com.example.exception.ErrorMessage;
 import com.example.exception.MessageType;
+import com.example.repository.MediaRepository;
 import com.example.repository.UserRepository;
 import com.example.security.JwtUtils;
 import com.example.service.IAuthService;
@@ -30,16 +32,19 @@ public class AuthServiceImpl implements IAuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
+    private final MediaRepository mediaRepository;
     private final PasswordEncoder passwordEncoder;
 
     // RoleRepository bağımlılığını sildik
     public AuthServiceImpl(AuthenticationManager authenticationManager,
                            JwtUtils jwtUtils,
                            UserRepository userRepository,
+                           MediaRepository mediaRepository,
                            PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
         this.userRepository = userRepository;
+        this.mediaRepository = mediaRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -97,7 +102,17 @@ public class AuthServiceImpl implements IAuthService {
 
         user.setRole(userRole);
 
-        // 4. Kullanıcıyı veritabanına kaydetme
+        // 4. Profil alanları
+        user.setFullName(registerRequestDto.getFullName());
+        user.setBio(registerRequestDto.getBio());
+        if (registerRequestDto.getAvatarMediaId() != null) {
+            Media avatarMedia = mediaRepository.findById(registerRequestDto.getAvatarMediaId())
+                    .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Profil fotoğrafı bulunamadı")));
+            user.setAvatarMedia(avatarMedia);
+        }
+        user.setSlug(resolveSlug(registerRequestDto.getSlug(), registerRequestDto.getUsername()));
+
+        // 5. Kullanıcıyı veritabanına kaydetme
         userRepository.save(user);
 
         return new RegisterResponseDto("Kullanıcı başarıyla oluşturuldu.");
