@@ -170,6 +170,7 @@ export class ProfileComponent implements OnInit {
   username = '';
   avatarUrl = '';
   avatarMediaId: number | null = null;
+  private avatarRemoved = false;
 
   currentPassword = '';
   newPassword = '';
@@ -197,12 +198,17 @@ export class ProfileComponent implements OnInit {
     if (!item) return;
     this.avatarMediaId = Number(item.id);
     this.avatarUrl = item.url;
+    this.avatarRemoved = false;
     this.isAvatarPickerOpen = false;
   }
 
   clearAvatar(): void {
     this.avatarUrl = '';
     this.avatarMediaId = null;
+    // Backend "gönderilmezse dokunma" mantığında - bilerek kaldırdığımızı
+    // ayrıca belirtmezsek (removeAvatar), kaydedince eski avatar korunur
+    // (tam olarak yaşadığın sorun buydu - "Kaldır" sadece ekranda siliyordu).
+    this.avatarRemoved = true;
   }
 
   onSave(): void {
@@ -221,6 +227,7 @@ export class ProfileComponent implements OnInit {
         slug: this.slug || undefined,
         username: this.username || undefined,
         avatarMediaId: this.avatarMediaId ?? undefined,
+        removeAvatar: this.avatarMediaId === null && this.avatarRemoved ? true : undefined,
         newPassword: this.newPassword || undefined,
         currentPassword: this.currentPassword || undefined,
       })

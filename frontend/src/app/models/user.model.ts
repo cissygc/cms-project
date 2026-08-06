@@ -41,6 +41,9 @@ export interface UpdateProfilePayload {
   fullName?: string;
   bio?: string;
   avatarMediaId?: number;
+  // true gönderilirse avatar bilerek kaldırılır. Gönderilmezse (ve
+  // avatarMediaId de yoksa) mevcut avatar korunur - backend'in davranışı budur.
+  removeAvatar?: boolean;
   slug?: string;
   username?: string;
   newPassword?: string;
