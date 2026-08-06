@@ -65,6 +65,8 @@ public class UserServiceImpl implements IUserService {
             Media avatarMedia = mediaRepository.findById(dto.getAvatarMediaId())
                     .orElseThrow(() -> new BaseException(new ErrorMessage(MessageType.NO_RECORD_EXIST, "Profil fotoğrafı bulunamadı")));
             user.setAvatarMedia(avatarMedia);
+        } else if (dto.isRemoveAvatar()) {
+            user.setAvatarMedia(null);
         }
         if (dto.getSlug() != null && !dto.getSlug().equals(user.getSlug())) {
             if (userRepository.existsBySlug(dto.getSlug())) {
